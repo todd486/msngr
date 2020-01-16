@@ -155,6 +155,7 @@ class Textarea extends React.Component {
   render() {
     return(
       <div className="chatstuffs" >
+        <div className='userArea'>
         <textarea 
         className="userInput" 
         ref="userInputArea" 
@@ -170,8 +171,11 @@ class Textarea extends React.Component {
         }} //onchange update the state to be whatever the user wrote
         onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
         ></textarea>
-        <div className="lengthIndicator"></div>
+
         <button id="send" onClick={this.handleClick}>Send</button>
+        </div>
+
+        <div className="error">Error: Some error message here</div>
       </div>
     )
   }

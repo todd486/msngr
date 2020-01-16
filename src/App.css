@@ -49,13 +49,14 @@ html {scroll-behavior: smooth;}
 }
 
 .chatthingy {
+  border-top: 1px solid darkgray;
   align-self: flex-end;
   width: 100%;
   padding: 2vh;
 }
 
 .chatstuffs {
-  display: flex;
+  display: inline-block;
   align-content: center;
   height: 10vh;
   width: 100%;
@@ -79,11 +80,17 @@ html {scroll-behavior: smooth;}
   width: 10vw;
 }
 
-.lengthIndicator {
-  border: 4px solid deepskyblue ;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  position: absolute;
-  visibility: hidden;
+.userArea {
+  display: flex;
+  width: 100%;
+}
+
+.error {
+  color: crimson;
+  display: none; /*inline block*/
+  width: 100%;
+  align-self: flex-end;
+  font-size: 1.7vh;
+  border-top: 1px solid crimson;
+  margin-top: 1vh;
 }
