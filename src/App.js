@@ -28,7 +28,7 @@ function fetchPosts() {
   console.log('looking for new messages')
 
   //randomize if there's a new post (for testing)
-  let newPosts = Boolean(Math.round(Math.random()))
+  let newPosts = false //Boolean(Math.round(Math.random()))
 
   if (userPost !== undefined) {newPosts = true;} 
 
@@ -37,7 +37,7 @@ function fetchPosts() {
     //implement axios get later
     if (newPosts === true) {
       if (userPost === undefined) {
-        resolve([{content: token(8)}])
+        //resolve([{content: token(8)}])
       } else { //add userpost if a new post by the user is detected
         resolve([userPost])
         userPost = undefined;
@@ -51,12 +51,18 @@ function fetchPosts() {
 function sendPost(userInput) {
   console.log('attempting to send')
 
-  //set message to next fetch
-  userPost = {content: userInput}
+  let success = true //currently always works
+  let currentDate = (new Date().toString())
+  let randomVotes = (Math.floor(Math.random() * 10))
 
   return new Promise(function(resolve, reject) {
-    resolve('message sent')
-    reject('failed to send')
+    if (success === true) {
+      resolve('message sent')
+      //set message to next fetch
+      userPost = {postID: token(16), content: userInput, votes: randomVotes, date: currentDate}
+    } else {
+      reject('failed to send')
+    }
   })
 }
 
@@ -83,7 +89,8 @@ class MessageManager extends React.Component {
   }
 
   refresh() {
-    //Debug console.log(this.state.posts)
+    //sanity check
+    //console.log(this.state.posts)
 
     //check if post buffer would be filled
     if ((this.state.posts.length + 1) > this.var.maxLoadedPosts ) {
@@ -108,12 +115,23 @@ class MessageManager extends React.Component {
       })
   }
 
+  /* mapping the data with a key of {index}, display data.content */
   render() {
     return (
       <div className='message-container' id='message-container'>
         {this.state.posts.map((data, index) => (
-          <div className='message' key={index}>{data.content}</div>
-        ))/* mapping the data with a key of {index}, display data.content */}
+          <div className='message' key={index} value={data.postID}>
+            <div className='content'>{data.content}</div>
+            <div className='sub-content'>
+              <div className='date'>{data.date}</div>
+              <div className='vote'>
+                <span className='vote-btn upvote'><i className='fa fa-chevron-circle-up' /></span>
+                <span className='vote-amount'>{data.votes}</span>
+                <span className='vote-btn downvote'><i className='fa fa-chevron-circle-down' /></span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -123,28 +141,32 @@ class Textarea extends React.Component {
   constructor(props) {
     super(props);
     this.handleClick = this.handleClick.bind(this);
-    this.state = { messageContent: '' };
+    this.state = { messageContent: '', errorState: '', errorVisible: false };
     this.var = { maxLength: 128 };
   }
 
   handleClick() {
     //check for empty or too short message to avoid spam
-    //TODO: display error message in a more user friendly way
+    //TODO: display error message in a more user friendly way, and clean up this disgusting code
     if ((this.state.messageContent).trim().length > 3) {
       sendPost(this.state.messageContent)
         .then(resolve => {
           console.log(resolve)
           //clear the textarea if sending was successful
           this.setState({messageContent: ''});
+          this.setState({errorVisible: false})
         })
         .catch(reject => {
-          console.log(reject)
+          this.setState({errorState: reject})
+          this.setState({errorVisible: true})
         })
     } else {
-      console.log("no empty messages or message too short")
+      this.setState({errorState: 'message too short or blank'})
+      this.setState({errorVisible: true})
     }
   }
 
+  //change this into something that i actually understand how it works
   onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false) {
       e.preventDefault();
@@ -172,10 +194,10 @@ class Textarea extends React.Component {
         onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
         ></textarea>
 
-        <button id="send" onClick={this.handleClick}>Send</button>
+        <button id="send" onClick={this.handleClick}><i className="fa fa-paper-plane"></i></button>
         </div>
 
-        <div className="error">Error: Some error message here</div>
+        {this.state.errorVisible && <div className="error">Error: {this.state.errorState}</div> /* rendering an element as false && <element> will make it not visible */}
       </div>
     )
   }
