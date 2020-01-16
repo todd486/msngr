@@ -1,103 +1,155 @@
 import React from 'react';
 import './App.css';
-import axios from 'axios';
+// import axios from 'axios';
 
 function App() {
   return (
     <div className="App">
       <div className="main">
-        <div className="messagebox">
-          <div className="message">
-            <div className="username">anonymous turtle</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous peacock</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous koala</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous ant</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous zebra</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous rabbit</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous alligator</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-          <div className="message">
-            <div className="username">anonymous cat</div>
-            <p className="content">Lorem ipsum dolor sit amet, consectetur adipisicing elit</p>
-          </div>
-
-        </div>
+        <MessageManager />
         <div className="chatthingy">
-          <MessageHandler />
+          <Textarea />
         </div>
       </div>
     </div>
   );
 }
 
-function Token() {
-  return (Math.floor(100000 + Math.random() * 900000))
+function token(length) {
+  const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
+  let output = '';
+  for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
+  return output;
 }
 
-class MessageHandler extends React.Component {
+let userPost = undefined;
+
+function fetchPosts() {
+  console.log('looking for new messages')
+
+  //randomize if there's a new post (for testing)
+  let newPosts = Boolean(Math.round(Math.random()))
+
+  if (userPost !== undefined) {newPosts = true;} 
+
+  //promise to return either resolve or reject
+  return new Promise(function(resolve, reject) {
+    //implement axios get later
+    if (newPosts === true) {
+      if (userPost === undefined) {
+        resolve([{content: token(8)}])
+      } else { //add userpost if a new post by the user is detected
+        resolve([userPost])
+        userPost = undefined;
+      }
+    } else {
+      reject('no new messages')
+    }
+  })
+}
+
+function sendPost(userInput) {
+  console.log('attempting to send')
+
+  //set message to next fetch
+  userPost = {content: userInput}
+
+  return new Promise(function(resolve, reject) {
+    resolve('message sent')
+    reject('failed to send')
+  })
+}
+
+class MessageManager extends React.Component {
   constructor(props) {
     super(props);
-    this.handleSend = this.handleSend.bind(this);
-    this.state = { messageContent: '', sessionToken: ''};
-    this.var = { maxLength: 128};
+    this.state = { posts: [] }
+    this.var = { maxLoadedPosts: 128 } //maybe let user configure how many posts to allow at once, since it may decrease performance
   }
 
   //on component mounting
   componentDidMount() {
     this.timer = setInterval(
-      () => this.refresh(), 10000 ) //refresh the messages every 10 seconds
+      () => this.refresh(), 1000 ) //refresh the messages every 1000 milliseconds
 
-    //give the user a session token, randomized each session
-    this.setState({sessionToken: 'asasa'})
-
-    console.log(this.state.sessionToken)
+    this.internalFetch()
   }
   componentWillUnmount() { clearInterval(this.timer) }
 
-  //declare what should happen during a message refresh
-  refresh() {
-    console.log('checking for new messages')
-    //declare which adress it should fetch from
-    // axios.get('https://dog.ceo/api/breeds/image/random')
-    // .then(response => {
-    //   console.log(response.data);
-    // })
-    // .catch(error => {
-    //   console.log(error);
-    // });
+  componentDidUpdate() {
+    //scroll to bottom of chatbox on update
+    const objDiv = document.getElementById('message-container');
+    objDiv.scrollTop = objDiv.scrollHeight;
   }
 
-  handleSend() {
-    //check for empty message
-    if ((this.state.messageContent).trim().length > 3) {
-      console.log("sending!")
-      console.log(this.state.messageContent)
-      //clear the textarea if sending was successful
-      this.setState({messageContent: ''});
-    } else {
-      console.log("didn't send! no empty messages or message too short")
+  refresh() {
+    //Debug console.log(this.state.posts)
+
+    //check if post buffer would be filled
+    if ((this.state.posts.length + 1) > this.var.maxLoadedPosts ) {
+      console.log('buffer filled, removing first array item')
+      this.setState({
+        posts: this.state.posts.splice(1) //splice the first post in array out if buffer is filled
+      })
     }
-    //make sure user input is always treated as a string, to avoid xss exploits
-    //create an object containing what the user wrote
+
+    this.internalFetch()
+  }
+
+  internalFetch() {
+    fetchPosts() //promise based fetching
+      .then(resolve => {
+        this.setState({
+          posts: this.state.posts.concat(resolve) //note to self: push bad, concat good
+        })
+      })
+      .catch(reject => {
+        console.log(reject)
+      })
+  }
+
+  render() {
+    return (
+      <div className='message-container' id='message-container'>
+        {this.state.posts.map((data, index) => (
+          <div className='message' key={index}>{data.content}</div>
+        ))/* mapping the data with a key of {index}, display data.content */}
+      </div>
+    )
+  }
+}
+
+class Textarea extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleClick = this.handleClick.bind(this);
+    this.state = { messageContent: '' };
+    this.var = { maxLength: 128 };
+  }
+
+  handleClick() {
+    //check for empty or too short message to avoid spam
+    //TODO: display error message in a more user friendly way
+    if ((this.state.messageContent).trim().length > 3) {
+      sendPost(this.state.messageContent)
+        .then(resolve => {
+          console.log(resolve)
+          //clear the textarea if sending was successful
+          this.setState({messageContent: ''});
+        })
+        .catch(reject => {
+          console.log(reject)
+        })
+    } else {
+      console.log("no empty messages or message too short")
+    }
+  }
+
+  onEnterPress = (e) => {
+    if(e.keyCode === 13 && e.shiftKey === false) {
+      e.preventDefault();
+      this.handleClick();
+    }
   }
 
   render() {
@@ -115,10 +167,11 @@ class MessageHandler extends React.Component {
             this.setState({
               messageContent:event.target.value
             });
-        }}
+        }} //onchange update the state to be whatever the user wrote
+        onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
         ></textarea>
         <div className="lengthIndicator"></div>
-        <button id="send" onClick={this.handleSend}>Send</button>
+        <button id="send" onClick={this.handleClick}>Send</button>
       </div>
     )
   }

@@ -1,5 +1,7 @@
 * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', sans-serif;}
 
+html {scroll-behavior: smooth;}
+
 .App {
   text-align: center;
   display: flex;
@@ -18,7 +20,7 @@
   flex-direction: column;
 }
 
-.messagebox {
+.message-container {
   border-radius: 6px;
   overflow-y: scroll;
   width: 100%;
