@@ -1,5 +1,4 @@
 [
-    /*sample posts*/
     {"postID": "0KabXNaxbW", "content": "sample text", "votes": "2", "date": "Sat Jan 18 2020 00:31:01 GMT+0100 (centraleuropeisk normaltid)"},
     {"postID": "a3ttEsREX4", "content": "sample text", "votes": "2", "date": "Sat Jan 18 2020 00:31:01 GMT+0100 (centraleuropeisk normaltid)"},
     {"postID": "VCStIyxwgl", "content": "more sample text", "votes": "6", "date": "Sat Jan 18 2020 00:31:01 GMT+0100 (centraleuropeisk normaltid)"},
