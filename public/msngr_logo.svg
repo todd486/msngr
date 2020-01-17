@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 210 297"
+   height="297mm"
+   width="210mm">
+  <defs
+     id="defs2" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1">
+    <g
+       id="g914">
+      <g
+         transform="translate(-11.278656,-16.00738)"
+         id="g929">
+        <path
+           id="path821"
+           d="m 11.278656,34.83702 10.200021,2.68331 1.94599,7.13028 4.94712,-4.85696 9.57854,2.5198 7.17939,-26.30607 z"
+           style="fill:#2ad4ff;fill-opacity:1;stroke:none;stroke-width:2.17385006px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+        <text
+           id="text817"
+           y="38.107498"
+           x="20.571726"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:13.76330662px;line-height:1.25;font-family:'UD Digi Kyokasho NK-B';-inkscape-font-specification:'UD Digi Kyokasho NK-B Bold';letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.32257745"
+           xml:space="preserve"><tspan
+             style="fill:#ffffff;stroke-width:0.32257745"
+             y="38.107498"
+             x="20.571726"
+             id="tspan815">msngr</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>

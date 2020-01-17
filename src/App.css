@@ -87,7 +87,7 @@ html {scroll-behavior: smooth;}
   }
 }
 
-.chatthingy {
+.chatcontainer {
   border-top: 1px solid darkgray;
   align-self: flex-end;
   width: 100%;
@@ -104,7 +104,6 @@ html {scroll-behavior: smooth;}
 
 .userInput {
   border-radius: 6px;
-  width: fit-content;
   resize: none;
   width: 100%;
   padding: 1vh;
@@ -116,10 +115,12 @@ html {scroll-behavior: smooth;}
   border-radius: 6px;
   border: none;
   height: 10vh;
-  width: 10vw;
+  padding: 1vh;
+
   background-color: lightgray;
   color: white;
-  font-size: 3vw
+  font-size: 3vh;
+  
 }
 
 .userArea {
@@ -128,7 +129,7 @@ html {scroll-behavior: smooth;}
 }
 
 .error {
-  animation: fadeOut 0.3s ease alternate-reverse both;
+  animation: fadeOut 0.2s ease alternate-reverse both;
   color: crimson;
   display: block;
   align-self: flex-end;
