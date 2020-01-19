@@ -17,58 +17,70 @@ function App() {
   );
 }
 
-//generates a token of random characters of a specific length
-function token(length) {
-  const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
-  let output = '';
-  for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
-  return output;
-}
-
-let userPost = undefined;
-
-function fetchPosts() {
+function fetchPosts(query) {
   console.log('looking for new messages')
 
-  //randomize if there's a new post (for testing)
-  let newPosts = false //Boolean(Math.round(Math.random()))
-
-  if (userPost !== undefined) {newPosts = true;} 
-
-  //TODO: clean up this code, and implement axios
-  //promise to return either resolve or reject
-  return new Promise(function(resolve, reject) {
-    if (newPosts === true) {
-      if (userPost === undefined) {
-        //resolve([{content: token(8)}]) //posts random string of 8 chars (for testing messaging functionality)
-      } else { //add userpost if a new post by the user is detected
-        resolve([userPost])
-        userPost = undefined;
-      }
-    } else {
-      reject('no new messages')
+  switch(query) {
+    case 'top' : {
+      return new Promise((resolve, reject) => {
+        axios.get(`http://localhost:8080?q=get${query}`)
+          .then(response => {
+            console.log(response)
+            resolve(response)
+          })
+          .catch(error => {
+            reject(error)
+          })
+      })
     }
-  })
+    case 'new' : {
+      return new Promise((resolve, reject) => {
+        axios.get(`http://localhost:8080?q=get${query}`)
+          .then(response => {
+            console.log(response)
+            resolve(response)
+          })
+          .catch(error => {
+            reject(error)
+          })
+      })
+    }
+    default : {
+      console.log('malformed internal get request')
+    }
+  }
 }
 
-function sendPost(userInput) {
+function sendData(query, data, postID, action) {
   console.log('attempting to send')
 
-  let success = true //currently always works (for testing message sending failing)
-  let currentDate = (new Date().toString())
-  let randomVotes = (Math.floor(Math.random() * 10))
-
-  return new Promise(function(resolve, reject) {
-    //TODO: implement axios, check for success on message send
-    if (success === true) {
-      resolve('message sent')
-      //set message to next fetch
-      //get postID from server later
-      userPost = {postID: token(16), content: userInput, votes: randomVotes, userVote: [0,0], date: currentDate}
-    } else {
-      reject('failed to send')
+  switch(query) {
+    case 'send' : {
+      return new Promise((resolve, reject) => {
+        axios.post(`http://localhost:8080?q=${query}`, data)
+          .then(response => {
+            resolve(response) //TODO: figure out how to send data
+          })
+          .catch(error => {
+            reject(error)
+          }) //might be able to move .then & .catch outside of case, might fall outside scope
+      })
     }
-  })
+    case 'vote' : {
+      return new Promise((resolve, reject) => {
+        axios.post(`http://localhost:8080?q=${query}&?postID=${postID}&?v=${action}`)
+          .then(response => {
+            resolve(response)
+          })
+          .catch(error => {
+            reject(error)
+          })
+      })
+    }
+    default : {
+      console.log('malformed internal post request')
+    }
+  }
 }
 
 class MessageManager extends React.Component {
@@ -83,16 +95,17 @@ class MessageManager extends React.Component {
       () => this.refresh(), 1000 )
     //set an interval to refresh the messages every 1000 milliseconds
 
-    //fetch new messages on first load
-    this.fetchNewToComponent()
-
-    axios.get('http://localhost:8080/init') //initialize user
+    axios.get('http://localhost:8080?q=init') //initialize user
       .then(response => (
-        console.log(response)
+        console.log(response),
+        //fetch new messages on first load
+        this.fetchToComponent()
       ))
       .catch(error => (
         console.log(error)
+        //halt if can't init user
       ))
+
   }
   componentWillUnmount() { clearInterval(this.timer) }
 
@@ -102,11 +115,13 @@ class MessageManager extends React.Component {
     objDiv.scrollTop = objDiv.scrollHeight;
   }
 
-  fetchNewToComponent() {
-    fetchPosts() //promise based fetching
+  fetchToComponent() {
+    fetchPosts('top') //promise based fetching
     .then(resolve => {
       this.setState({
-        posts: this.state.posts.concat(resolve) //note to self: push bad, concat good
+        posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
+        //concat the resolved data
+        //TODO: implement check for loading all or single message
       })
     })
     .catch(reject => {
@@ -122,9 +137,7 @@ class MessageManager extends React.Component {
         posts: this.state.posts.splice(1) //splice the first post in array out if buffer is filled
       })
     }
-
-    //fetch new messages
-    this.fetchNewToComponent()
+    //this.fetchNewToComponent()
   }
 
   /* mapping the data with a key of {index}, display data.content */
@@ -139,7 +152,7 @@ class MessageManager extends React.Component {
               <div className='tooltip date'>{data.date}</div>
               <div className='vote'>
                 <span className='vote-btn upvote'>
-                  <i className='fa fa-chevron-circle-up' value={false}
+                  <i className='fa fa-chevron-circle-up' 
                   onClick={(upvoteEvent) => {
                     //check if downvote button is pressed, and invert the vote value afterwards
                     console.log(upvoteEvent.target) /* modify colour of button if pressed */
@@ -148,7 +161,7 @@ class MessageManager extends React.Component {
                   /></span>
                 <span className='vote-amount'>{data.votes}</span>
                 <span className='vote-btn downvote'>
-                  <i className='fa fa-chevron-circle-down' value={false}
+                  <i className='fa fa-chevron-circle-down' 
                   onClick={(downvoteEvent) => {
                     console.log(downvoteEvent.target)
                     console.log(this.state.posts[index].votes)
@@ -175,7 +188,7 @@ class Textarea extends React.Component {
     //check for empty or too short message to avoid spam
     //TODO: clean up this repetitive code
     if ((this.state.messageContent).trim().length > 3) {
-      sendPost(this.state.messageContent)
+      sendData('send', this.state.messageContent)
         .then(resolve => {
           console.log(resolve)
           //clear the textarea if sending was successful
