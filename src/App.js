@@ -4,9 +4,13 @@ import axios from 'axios';
 
 /*TODO: move error display outside of textarea
   also add logo, settings menu, as well as filtering for posts*/
+
+//set if loading animation should display
+
 function App() {
   return (
     <div className="App">
+      {false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
       <div className="main">
         <MessageManager />
         <div className="chatcontainer">
@@ -93,19 +97,27 @@ class MessageManager extends React.Component {
   componentDidMount() {
     this.timer = setInterval(
       () => this.refresh(), 1000 )
-    //set an interval to refresh the messages every 1000 milliseconds
+    //set an interval to refresh the messages every second
 
-    axios.get('http://localhost:8080?q=init') //initialize user
+    const initialize = () => {
+      axios.get('http://localhost:8080?q=init') //initialize user
       .then(response => (
         console.log(response),
         //fetch new messages on first load
-        this.fetchToComponent()
+        this.fetchToComponent('top')
       ))
       .catch(error => (
-        console.log(error)
-        //halt if can't init user
+        console.log(error),
+        //check every 5 seconds to see if connection to server can be made to init user
+        //TODO: display error to user
+        setTimeout(initialize(), 5000)
       ))
+      .finally(
+        //set the loading screen not to be visible
+      )
+    }
 
+    initialize()
   }
   componentWillUnmount() { clearInterval(this.timer) }
 
@@ -115,8 +127,8 @@ class MessageManager extends React.Component {
     objDiv.scrollTop = objDiv.scrollHeight;
   }
 
-  fetchToComponent() {
-    fetchPosts('top') //promise based fetching
+  fetchToComponent(query) {
+    fetchPosts(query) //promise based fetching
     .then(resolve => {
       this.setState({
         posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
@@ -137,7 +149,6 @@ class MessageManager extends React.Component {
         posts: this.state.posts.splice(1) //splice the first post in array out if buffer is filled
       })
     }
-    //this.fetchNewToComponent()
   }
 
   /* mapping the data with a key of {index}, display data.content */
@@ -155,16 +166,21 @@ class MessageManager extends React.Component {
                   <i className='fa fa-chevron-circle-up' 
                   onClick={(upvoteEvent) => {
                     //check if downvote button is pressed, and invert the vote value afterwards
-                    console.log(upvoteEvent.target) /* modify colour of button if pressed */
-                    console.log(this.state.posts[index].votes) /* help how do i modify values of objects in state arrays, at least i can display the value */
+                    //console.log(upvoteEvent.target) /* modify colour of button if pressed */
+                    //console.log(this.state.posts[index].votes) /* help how do i modify values of objects in state arrays, at least i can display the value */
+
+                    sendData('vote', null, data.postID, 'upvote')
                   }}
                   /></span>
                 <span className='vote-amount'>{data.votes}</span>
                 <span className='vote-btn downvote'>
                   <i className='fa fa-chevron-circle-down' 
                   onClick={(downvoteEvent) => {
-                    console.log(downvoteEvent.target)
-                    console.log(this.state.posts[index].votes)
+                    //console.log(downvoteEvent.target)
+                    //console.log(this.state.posts[index].votes)
+
+                    sendData('vote', null, data.postID, 'downvote')
+                    //call refresh on data once upvote has been acknoledged
                   }}
                   /></span>
               </div>
@@ -186,9 +202,9 @@ class Textarea extends React.Component {
 
   handleClick() {
     //check for empty or too short message to avoid spam
-    //TODO: clean up this repetitive code
+    //TODO: clean up this disgusting code
     if ((this.state.messageContent).trim().length > 3) {
-      sendData('send', this.state.messageContent)
+      sendData('send', [this.state.messageContent])
         .then(resolve => {
           console.log(resolve)
           //clear the textarea if sending was successful

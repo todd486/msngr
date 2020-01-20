@@ -65,6 +65,7 @@ const server = http.createServer((request, response) => {
                     'Content-Type': 'application/json',
                 });
 
+                break;
             }
             default : {
                 //default to 404
@@ -81,6 +82,8 @@ const server = http.createServer((request, response) => {
         //deny request if user isn't initilized
         switch(querystring.decode(request.url, '?').q) {
             case 'send' : {
+
+                console.log(request.data)
 
                 response.end()
 
@@ -111,7 +114,7 @@ const server = http.createServer((request, response) => {
                 break;
             }
             default : {
-                //default to 404
+                //default to 400
                 console.log('user requested invalid operand')
                 response.statusCode = 400;
                 response.end();

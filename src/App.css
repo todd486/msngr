@@ -8,6 +8,35 @@ html {scroll-behavior: smooth;}
   justify-content: center;
 }
 
+.loading {
+  position: absolute;
+  display: flex;
+  background-color: rgba(0,0,0,0.6);
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.loadingicon {
+  animation: spin 3s cubic-bezier(0.3, 0.85, 0.85, 0.3) 2s infinite;
+  align-self: center;
+  fill: none;
+  stroke: white;
+  stroke-width: 6;
+  stroke-dasharray: 250;
+  stroke-dashoffset: 1000;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    stroke-dashoffset: 0;
+    transform: rotate(364deg);
+  }
+}
+
 .main {
   background-color: white;
   box-shadow: 0px 3px 10px 0px rgba(0,0,0,0.6);
@@ -20,13 +49,12 @@ html {scroll-behavior: smooth;}
   flex-direction: column;
 }
 
+
 @media only screen and (max-width: 500px) {
   .main {
     width: 90%;
   }
 }
-
-
 
 .message-container {
   border-radius: 6px;
