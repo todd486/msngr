@@ -56,23 +56,22 @@ function fetchPosts(query) {
 }
 
 function sendData(query, data, postID, action) {
-  console.log('attempting to send')
-
+  console.log('sendData(); | attempting to send : ' + query )
   switch(query) {
     case 'send' : {
       return new Promise((resolve, reject) => {
-        axios.post(`http://localhost:8080?q=${query}`, data)
+        axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({data}))
           .then(response => {
-            resolve(response) //TODO: figure out how to send data
+            console.log(response)
           })
           .catch(error => {
-            reject(error)
-          }) //might be able to move .then & .catch outside of case, might fall outside scope
+            console.log(error)
+          }) 
       })
     }
     case 'vote' : {
       return new Promise((resolve, reject) => {
-        axios.post(`http://localhost:8080?q=${query}&?postID=${postID}&?v=${action}`)
+        axios.post(`http://localhost:8080?q=${query}?postID=${postID}?v=${action}`)
           .then(response => {
             resolve(response)
           })
@@ -160,12 +159,14 @@ class MessageManager extends React.Component {
           <div className='message' key={index} value={data.postID}>
             <div className='content'>{data.content}</div>
             <div className='sub-content'>
-              <div className='tooltip date'>{data.date}</div>
+              <div className='date'>{new Date(JSON.parse(data.date)).toUTCString()}</div>
               <div className='vote'>
                 <span className='vote-btn upvote'>
                   <i className='fa fa-chevron-circle-up' 
                   onClick={(upvoteEvent) => {
                     //check if downvote button is pressed, and invert the vote value afterwards
+                    //TODO: make these buttons toggles
+
                     //console.log(upvoteEvent.target) /* modify colour of button if pressed */
                     //console.log(this.state.posts[index].votes) /* help how do i modify values of objects in state arrays, at least i can display the value */
 
@@ -201,24 +202,8 @@ class Textarea extends React.Component {
   }
 
   handleClick() {
-    //check for empty or too short message to avoid spam
-    //TODO: clean up this disgusting code
-    if ((this.state.messageContent).trim().length > 3) {
-      sendData('send', [this.state.messageContent])
-        .then(resolve => {
-          console.log(resolve)
-          //clear the textarea if sending was successful
-          this.setState({messageContent: ''});
-          this.setState({errorVisible: false})
-        })
-        .catch(reject => {
-          this.setState({errorState: reject})
-          this.setState({errorVisible: true})
-        })
-    } else {
-      this.setState({errorState: 'message too short or blank'})
-      this.setState({errorVisible: true})
-    }
+    console.log("handle click: attempting to send")
+    sendData('send', this.state.messageContent)
   }
 
   //TODO: change this into something that i actually understand how it works

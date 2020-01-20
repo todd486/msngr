@@ -3,7 +3,7 @@ const querystring = require('querystring');
 const hostname = 'localhost';
 const port = '8080';
 const posts = require('./posts.json')
-const fs = require('fs');
+const filesystem = require('fs');
 
 //generates a token of random characters of a specific length
 function token(length) {
@@ -16,7 +16,35 @@ function token(length) {
 //store the users who are currently connected in an array
 var connectedUsers = []
 
+//TODO: manage posts and handle POST requests
 const server = http.createServer((request, response) => {
+    //server functions
+    function init() {
+        //write a header for OK status
+        response.writeHead(200, {
+            'Content-Type': 'application/json',
+        });
+    
+        //TODO: make tokens expire after a while
+        let requesteeAdress = request.connection.remoteAddress;
+    
+        //check if same ip adress is found to be still connected
+        if (connectedUsers.find(x => x.userAdress === requesteeAdress) === undefined ) {
+            //if one cant be found, give the new ip adress a token, and reply with it
+            connectedUsers.push({ userID: token(8), userAdress: requesteeAdress })
+
+            //log who just connected
+            console.log(connectedUsers.find(x => x.userAdress === requesteeAdress))
+
+            //write to response and end comm
+            response.end(JSON.stringify(connectedUsers[connectedUsers.findIndex(x => x.userAdress === requesteeAdress)]))
+        } else {
+            //else reply with the token they we're already given.
+            console.log('user with same ip adress found; assumed same user, gave same token')
+            response.end(JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
+        }
+    }
+
     //allow CORS
     response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     response.setHeader("Access-Control-Allow-Origin", "*");
@@ -24,32 +52,7 @@ const server = http.createServer((request, response) => {
     //GET requests
     if (request.method === 'GET') {
         switch(querystring.decode(request.url, '?').q) {
-            case 'init' : {
-                 //write a header for OK status
-                response.writeHead(200, {
-                    'Content-Type': 'application/json',
-                });
-
-                //TODO: make tokens expire after a while
-                let requesteeAdress = request.connection.remoteAddress;
-
-                //check if same ip adress is found to be still connected
-                if (connectedUsers.find(x => x.userAdress === requesteeAdress) === undefined ) {
-                    //if one cant be found, give the new ip adress a token, and reply with it
-                    connectedUsers.push({ userID: token(8), userAdress: requesteeAdress })
-                    //log who just connected
-                    console.log(connectedUsers.find(x => x.userAdress === requesteeAdress))
-                    //write to response
-                    response.write(JSON.stringify(connectedUsers[connectedUsers.findIndex(x => x.userAdress === requesteeAdress)]))
-                    //end communications afterwards
-                    response.end() 
-                } else {
-                    //else reply with the token they we're already given.
-                    console.log('user with same ip adress found; assumed same user, gave same token')
-                    response.end(JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
-                }
-                break;
-            }
+            case 'init' : { init(); break; } //initialize user 
             case 'gettop' : {
                 //get most popular 128 posts for the day
                 response.writeHead(200, {
@@ -65,6 +68,7 @@ const server = http.createServer((request, response) => {
                     'Content-Type': 'application/json',
                 });
 
+                response.end('get new')
                 break;
             }
             default : {
@@ -73,34 +77,63 @@ const server = http.createServer((request, response) => {
                 response.end();
             }
         }
-
-       
     } 
-    //TODO: handle POST requests
-    //post example http://localhost:8080/?q=vote&?postID=XXXXXXXX&?v=upvote
+    //handle POST requests; example http://localhost:8080/?q=vote&?postID=XXXXXXXX&?v=upvote
+    //TODO: handle spam requests
     if (request.method === 'POST') {
         //deny request if user isn't initilized
+        if (connectedUsers.find(x => x.userAdress === response.connection.address) === false) { console.log("uninititialized user detected"); init(); }
+
+        //print what any user has requested.
+        console.log("received query: ")
+        console.log(querystring.decode(request.url, '?'))
+
         switch(querystring.decode(request.url, '?').q) {
             case 'send' : {
+                let recievedData = '';
+                request.on('data', (data) => {
+                    recievedData += data
+                    //kill the connection if user tries to send a message longer than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                    if (data.length > 1e6) {
+                        request.connection.destroy();
+                    } else {
+                        console.log(recievedData)
+                        //generate the additional data relevant to post
+                        let formattedPost = {
+                            postID: token(8), 
+                            content: recievedData,
+                            votes: 1,
+                            date: Date.now(),
+                        }
+                        console.log(formattedPost)
+                    }
+                })
 
-                console.log(request.data)
-
-                response.end()
+                response.writeHead(200, {})
+                response.end(recievedData)
 
                 break;
             }
             case 'vote' : {
                 //check which post the user wishes to vote on
                 //check if post exists, and if user has voted on it already
+                //TODO: make sure user can undo votes
 
                 if (posts.find(x => x.postID === querystring.decode(request.url, '?').postID)) {
                     switch(querystring.decode(request.url, '?').v) {
                         case 'upvote' : {
-                            
+                            //write to database the updated 
+                            response.end()
                             break;
                         }
                         case 'downvote' : {
-                            
+                            response.statusCode = 200;
+                            response.end()
+                            break;
+                        }
+                        default : {
+                            response.statusCode = 200;
+                            response.end()
                             break;
                         }
                     }
@@ -115,7 +148,7 @@ const server = http.createServer((request, response) => {
             }
             default : {
                 //default to 400
-                console.log('user requested invalid operand')
+                console.log('user requested invalid query')
                 response.statusCode = 400;
                 response.end();
             }

@@ -89,7 +89,7 @@ html {scroll-behavior: smooth;}
 .date {
   align-self: flex-end;
   justify-self: stretch;
-  font-size: 0.8vh;
+  font-size: 1vh;
   
   flex: 1 1;
 }
