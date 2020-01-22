@@ -58,7 +58,7 @@ function fetchPosts(query) {
 function sendData(query, data, postID, action) {
   console.log('sendData(); | attempting to send : ' + query )
   switch(query) {
-    case 'send' : {
+    case 'post' : {
       return new Promise((resolve, reject) => {
         axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({data}))
           .then(response => {
@@ -71,6 +71,7 @@ function sendData(query, data, postID, action) {
     }
     case 'vote' : {
       return new Promise((resolve, reject) => {
+        //TODO: send post id as well as user id in query as data. verfiy user id serverside
         axios.post(`http://localhost:8080?q=${query}?postID=${postID}?v=${action}`)
           .then(response => {
             resolve(response)
@@ -203,7 +204,7 @@ class Textarea extends React.Component {
 
   handleClick() {
     console.log("handle click: attempting to send")
-    sendData('send', this.state.messageContent)
+    sendData('post', this.state.messageContent)
   }
 
   //TODO: change this into something that i actually understand how it works
@@ -235,9 +236,10 @@ class Textarea extends React.Component {
             });
         }} //onchange update the state to be whatever the user wrote
         onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
-        />
+        ></textarea>
 
         <button id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
+        <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>
         </div>
 
         {this.state.errorVisible && <div className="error">Error: {this.state.errorState}</div> /* rendering an element as false && <element> will make it not visible */}

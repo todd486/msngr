@@ -1,23 +1,35 @@
 const http = require('http');
 const querystring = require('querystring');
+//const fs = require('fs');
+// const assert = require('assert');
+// const mongoclient = require('mongodb').MongoClient;
+
+//to be removed
+const posts = require('./posts.json')
+
+//values related to where and how server is hosted
 const hostname = 'localhost';
 const port = '8080';
-const posts = require('./posts.json')
-const filesystem = require('fs');
+// const databaseurl = `mongodb://${hostname}:27017/`;
 
-//generates a token of random characters of a specific length
-function token(length) {
-    const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
-    let output = '';
-    for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
-    return output;
-}
+//database related
+// const databasename = 'posts'
+// const client = new mongoclient(databaseurl)
 
-//store the users who are currently connected in an array
-var connectedUsers = []
+function printDate() { return ("[" + new Date(Date.now()).toUTCString() + "] ")}
 
-//TODO: manage posts and handle POST requests
 const server = http.createServer((request, response) => {
+
+    // client.connect((databaseurl) => {
+    //     assert.equal(null, err);
+    //     console.log('[INFO] Successfully connected to database')
+    //     const database = client.db(databasename);
+    //     client.close()
+    // })
+
+    //store the users who are currently connected in an array
+    let connectedUsers = []
+
     //server functions
     function init() {
         //write a header for OK status
@@ -34,23 +46,32 @@ const server = http.createServer((request, response) => {
             connectedUsers.push({ userID: token(8), userAdress: requesteeAdress })
 
             //log who just connected
-            console.log(connectedUsers.find(x => x.userAdress === requesteeAdress))
+            console.log('[INFO]' + printDate() + JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
 
             //write to response and end comm
-            response.end(JSON.stringify(connectedUsers[connectedUsers.findIndex(x => x.userAdress === requesteeAdress)]))
+            response.write(JSON.stringify(connectedUsers[connectedUsers.findIndex(x => x.userAdress === requesteeAdress)]))
         } else {
             //else reply with the token they we're already given.
-            console.log('user with same ip adress found; assumed same user, gave same token')
-            response.end(JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
+            console.log('[WARN]' + printDate() + 'User with same ip adress found; assumed same user, gave same token.')
+            response.write(JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
         }
     }
-
+    //generates a token of random characters of a specific length
+    function token(length) {
+        const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
+        let output = '';
+        for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
+        return output;
+    }
+    
     //allow CORS
+    //response.writeHead("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept", "Access-Control-Allow-Origin", "*")
     response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     response.setHeader("Access-Control-Allow-Origin", "*");
 
     //GET requests
     if (request.method === 'GET') {
+        console.log('[INFO]' + printDate() + 'Received GET query:' + JSON.stringify(querystring.decode(request.url, '?')) )
         switch(querystring.decode(request.url, '?').q) {
             case 'init' : { init(); break; } //initialize user 
             case 'gettop' : {
@@ -59,45 +80,46 @@ const server = http.createServer((request, response) => {
                     'Content-Type': 'application/json',
                 });
 
-                response.end(JSON.stringify(posts))
+                response.write(JSON.stringify(posts))
                 break;
             }   
             case 'getnew' : {
-                //stream in new posts as they come in
+                //TODO: stream in new posts as they come in
                 response.writeHead(200, {
                     'Content-Type': 'application/json',
                 });
 
-                response.end('get new')
+                response.write('get new')
                 break;
             }
             default : {
                 //default to 404
                 response.statusCode = 404;
-                response.end();
             }
         }
     } 
+
     //handle POST requests; example http://localhost:8080/?q=vote&?postID=XXXXXXXX&?v=upvote
     //TODO: handle spam requests
     if (request.method === 'POST') {
-        //deny request if user isn't initilized
-        if (connectedUsers.find(x => x.userAdress === response.connection.address) === false) { console.log("uninititialized user detected"); init(); }
+        if (connectedUsers.find(x => x.userAdress === request.connection.remoteAddress) === undefined ) { 
+            console.log('[WARN]' + printDate() + 'Uninitialized user detected. Reinitializing.'); init(); }
 
         //print what any user has requested.
-        console.log("received query: ")
-        console.log(querystring.decode(request.url, '?'))
+        console.log('[INFO]' + printDate() + 'Received POST query:' + JSON.stringify(querystring.decode(request.url, '?')) )
 
         switch(querystring.decode(request.url, '?').q) {
-            case 'send' : {
+            case 'post' : {
+                //create temporary value to store data
                 let recievedData = '';
                 request.on('data', (data) => {
                     recievedData += data
                     //kill the connection if user tries to send a message longer than 1e6 bytes (1000000 bytes ~~~ 1MB)
                     if (data.length > 1e6) {
+                        console.log('[WARN]' + printDate() + 'User request too large, destroying connection.')
+                        response.statusCode = 413;
                         request.connection.destroy();
                     } else {
-                        console.log(recievedData)
                         //generate the additional data relevant to post
                         let formattedPost = {
                             postID: token(8), 
@@ -105,13 +127,14 @@ const server = http.createServer((request, response) => {
                             votes: 1,
                             date: Date.now(),
                         }
-                        console.log(formattedPost)
+                        //echo the formatted post
+                        console.log('[INFO]' + printDate() + JSON.stringify(formattedPost))
+                        //attempt to write post to database
+                        //if an error is encountered, throw status 500
                     }
+                    response.statusCode = 201;
                 })
-
-                response.writeHead(200, {})
-                response.end(recievedData)
-
+                
                 break;
             }
             case 'vote' : {
@@ -122,26 +145,24 @@ const server = http.createServer((request, response) => {
                 if (posts.find(x => x.postID === querystring.decode(request.url, '?').postID)) {
                     switch(querystring.decode(request.url, '?').v) {
                         case 'upvote' : {
-                            //write to database the updated 
-                            response.end()
+                            response.statusCode = 202;
+
                             break;
                         }
                         case 'downvote' : {
-                            response.statusCode = 200;
-                            response.end()
+                            response.statusCode = 202;
+
                             break;
                         }
                         default : {
-                            response.statusCode = 200;
-                            response.end()
+                            response.statusCode = 403;
+                            console.log('invalid operator on vote')
                             break;
                         }
                     }
-
                 } else {
                     console.log('user requested to vote on non-existant post')
-                    response.statusCode = 400;
-                    response.end()
+                    response.statusCode = 403;
                 }
 
                 break;
@@ -149,16 +170,13 @@ const server = http.createServer((request, response) => {
             default : {
                 //default to 400
                 console.log('user requested invalid query')
-                response.statusCode = 400;
-                response.end();
+                response.statusCode = 403;
             }
         }
     } 
+    response.end();
 })
 
 server.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}/`); 
+    console.log('[INFO]' + printDate() + `Server running at http://${hostname}:${port}/`); 
 })
-
-
-  

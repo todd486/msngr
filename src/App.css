@@ -156,6 +156,20 @@ html {scroll-behavior: smooth;}
   width: 100%;
 }
 
+.limit {
+  position: fixed;
+  align-self: flex-end;
+  height: 20px;
+  width: 20px;
+}
+.limiticon {
+  fill: none;
+  stroke: deepskyblue;
+  stroke-width: 4;
+  stroke-dasharray: 250;
+  stroke-dashoffset: 1000;
+}
+
 .error {
   animation: fadeOut 0.2s ease alternate-reverse both;
   color: crimson;
