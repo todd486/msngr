@@ -21,9 +21,7 @@ function App() {
   );
 }
 
-function fetchPosts(query) {
-  console.log('looking for new messages')
-
+async function fetchPosts(query) {
   switch(query) {
     case 'top' : {
       return new Promise((resolve, reject) => {
@@ -38,16 +36,7 @@ function fetchPosts(query) {
       })
     }
     case 'new' : {
-      return new Promise((resolve, reject) => {
-        axios.get(`http://localhost:8080?q=get${query}`)
-          .then(response => {
-            console.log(response)
-            resolve(response)
-          })
-          .catch(error => {
-            reject(error)
-          })
-      })
+      //TODO: stream in new messages
     }
     default : {
       console.log('malformed internal get request')
@@ -55,7 +44,7 @@ function fetchPosts(query) {
   }
 }
 
-function sendData(query, data, postID, action) {
+async function sendData(query, data, postID, action) {
   console.log('sendData(); | attempting to send : ' + query )
   switch(query) {
     case 'post' : {
@@ -98,26 +87,7 @@ class MessageManager extends React.Component {
     this.timer = setInterval(
       () => this.refresh(), 1000 )
     //set an interval to refresh the messages every second
-
-    const initialize = () => {
-      axios.get('http://localhost:8080?q=init') //initialize user
-      .then(response => (
-        console.log(response),
-        //fetch new messages on first load
-        this.fetchToComponent('top')
-      ))
-      .catch(error => (
-        console.log(error),
-        //check every 5 seconds to see if connection to server can be made to init user
-        //TODO: display error to user
-        setTimeout(initialize(), 5000)
-      ))
-      .finally(
-        //set the loading screen not to be visible
-      )
-    }
-
-    initialize()
+    this.fetchToComponent('top')
   }
   componentWillUnmount() { clearInterval(this.timer) }
 
@@ -160,16 +130,11 @@ class MessageManager extends React.Component {
           <div className='message' key={index} value={data.postID}>
             <div className='content'>{data.content}</div>
             <div className='sub-content'>
-              <div className='date'>{new Date(JSON.parse(data.date)).toUTCString()}</div>
+              <div className='date'>{new Date(JSON.parse(data.date)).toLocaleTimeString()}</div>
               <div className='vote'>
                 <span className='vote-btn upvote'>
                   <i className='fa fa-chevron-circle-up' 
                   onClick={(upvoteEvent) => {
-                    //check if downvote button is pressed, and invert the vote value afterwards
-                    //TODO: make these buttons toggles
-
-                    //console.log(upvoteEvent.target) /* modify colour of button if pressed */
-                    //console.log(this.state.posts[index].votes) /* help how do i modify values of objects in state arrays, at least i can display the value */
 
                     sendData('vote', null, data.postID, 'upvote')
                   }}
@@ -178,11 +143,8 @@ class MessageManager extends React.Component {
                 <span className='vote-btn downvote'>
                   <i className='fa fa-chevron-circle-down' 
                   onClick={(downvoteEvent) => {
-                    //console.log(downvoteEvent.target)
-                    //console.log(this.state.posts[index].votes)
 
                     sendData('vote', null, data.postID, 'downvote')
-                    //call refresh on data once upvote has been acknoledged
                   }}
                   /></span>
               </div>
@@ -239,7 +201,7 @@ class Textarea extends React.Component {
         ></textarea>
 
         <button id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
-        <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>
+        {false && <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>/* rendering as false for now*/} 
         </div>
 
         {this.state.errorVisible && <div className="error">Error: {this.state.errorState}</div> /* rendering an element as false && <element> will make it not visible */}

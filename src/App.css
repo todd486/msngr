@@ -1,4 +1,4 @@
-* {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', sans-serif;}
+* {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', sans-serif; }
 
 html {scroll-behavior: smooth;}
 
@@ -70,11 +70,10 @@ html {scroll-behavior: smooth;}
   flex-direction: column;
   width: 100%;
   min-height: 8vh;
-  background-color: rgb(244,244,244);
-  margin: 1vh 0;
-  border-radius: 8px;
+  margin-top: 1vh;
   text-align: left;
   padding: 1vh;
+  border-top: 1px solid darkgray;
 }
 
 .content {

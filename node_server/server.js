@@ -1,10 +1,9 @@
 const http = require('http');
 const querystring = require('querystring');
-//const fs = require('fs');
+const cors = require('cors')
 // const assert = require('assert');
 // const mongoclient = require('mongodb').MongoClient;
 
-//to be removed
 const posts = require('./posts.json')
 
 //values related to where and how server is hosted
@@ -16,125 +15,125 @@ const port = '8080';
 // const databasename = 'posts'
 // const client = new mongoclient(databaseurl)
 
-function printDate() { return ("[" + new Date(Date.now()).toUTCString() + "] ")}
+function printTime() { return ("<" + new Date(Date.now()).toLocaleTimeString() + "> ")}
 
-const server = http.createServer((request, response) => {
+//stream related
+// let resultStream = '';
+// const wStream = new WritableStream({
+//     write(chunk) {
+//         return new Promise((resolve, reject) => {
+//             //create a new buffer where each 'view[0]' is equal to a chunk.
+//             let buffer = new ArrayBuffer(2); let view = new Uint16Array(buffer); view[0] = chunk;
 
-    // client.connect((databaseurl) => {
-    //     assert.equal(null, err);
-    //     console.log('[INFO] Successfully connected to database')
-    //     const database = client.db(databasename);
-    //     client.close()
-    // })
+//             let decoded = (new TextDecoder('utf-8')).decode(view, { stream : true }); resultStream += decoded;
+            
+//             resolve();
+//         })
+//     },
+//     close() {
+//         return resultStream;
+//     },
+//     abort(err) {
+//         console.log("[ERROR]" + printTime() + "Sink error: " + err)
+//     }
+// }, (new CountQueuingStrategy({ highWaterMark: 1 })))
+// const defaultWriter = stream.getWriter();
 
-    //store the users who are currently connected in an array
-    let connectedUsers = []
+
+//TODO: session checking, ssl?
+const server = http.createServer(async(request, response) => {
+    response.writeHead(200, { //write header with status 200; allow CORS
+        'Access-Control-Allow-Origin' : '*',
+        'Content-Type': 'application/json',
+    })
 
     //server functions
-    function init() {
-        //write a header for OK status
-        response.writeHead(200, {
-            'Content-Type': 'application/json',
-        });
-    
-        //TODO: make tokens expire after a while
-        let requesteeAdress = request.connection.remoteAddress;
-    
-        //check if same ip adress is found to be still connected
-        if (connectedUsers.find(x => x.userAdress === requesteeAdress) === undefined ) {
-            //if one cant be found, give the new ip adress a token, and reply with it
-            connectedUsers.push({ userID: token(8), userAdress: requesteeAdress })
-
-            //log who just connected
-            console.log('[INFO]' + printDate() + JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
-
-            //write to response and end comm
-            response.write(JSON.stringify(connectedUsers[connectedUsers.findIndex(x => x.userAdress === requesteeAdress)]))
-        } else {
-            //else reply with the token they we're already given.
-            console.log('[WARN]' + printDate() + 'User with same ip adress found; assumed same user, gave same token.')
-            response.write(JSON.stringify(connectedUsers.find(x => x.userAdress === requesteeAdress)))
-        }
-    }
-    //generates a token of random characters of a specific length
-    function token(length) {
+    function token(length) { //generates a token of random characters of a specific length
         const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
         let output = '';
         for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
         return output;
     }
-    
-    //allow CORS
-    //response.writeHead("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept", "Access-Control-Allow-Origin", "*")
-    response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    response.setHeader("Access-Control-Allow-Origin", "*");
+    // async function writeStream(data, stream) {
+    //     const encodedData = (new TextEncoder()).encode(data, { stream : true });
+    //     encodedData.forEach((chunk) => {
+    //         defaultWriter.ready
+    //         .then(() => {
+    //             return defaultWriter.write(chunk);
+    //         })
+    //         .then(() => {
+    //             console.log("[INFO]" + printTime() + "Wrote chunk to sink.")
+    //         })
+    //         .catch((err) => {
+    //             console.log("[ERROR]" + printTime() + "Error writing to sink: " + err)
+    //         })
+    //     })
+    //     defaultWriter.ready
+    //     .then(() => {
+    //         defaultWriter.close()
+    //     })
+    //     .then(() => {
+    //         console.log("[INFO]" + printTime() + "All chunks written.")
+    //     })
+    //     .catch((err) => {
+    //         console.log("[ERROR]" + printTime() + "Stream error:  " + err)
+    //     })
+    // }
 
     //GET requests
     if (request.method === 'GET') {
-        console.log('[INFO]' + printDate() + 'Received GET query:' + JSON.stringify(querystring.decode(request.url, '?')) )
+        console.log('[INFO]' + printTime() + 'Received GET query:' + JSON.stringify(querystring.decode(request.url, '?')) )
+
         switch(querystring.decode(request.url, '?').q) {
-            case 'init' : { init(); break; } //initialize user 
+
+            //switch this out for a single command to stream all the messages and sort them client side.
             case 'gettop' : {
                 //get most popular 128 posts for the day
-                response.writeHead(200, {
-                    'Content-Type': 'application/json',
-                });
-
+                //TODO: stream these messages
+                //console.log(writeStream('testing', wStream));
                 response.write(JSON.stringify(posts))
+
                 break;
             }   
             case 'getnew' : {
                 //TODO: stream in new posts as they come in
-                response.writeHead(200, {
-                    'Content-Type': 'application/json',
-                });
 
-                response.write('get new')
                 break;
             }
-            default : {
-                //default to 404
-                response.statusCode = 404;
-            }
+            default : { response.statusCode = 404; }
         }
     } 
 
-    //handle POST requests; example http://localhost:8080/?q=vote&?postID=XXXXXXXX&?v=upvote
-    //TODO: handle spam requests
+    //TODO: Implement spam protections and more bad actor protections
     if (request.method === 'POST') {
-        if (connectedUsers.find(x => x.userAdress === request.connection.remoteAddress) === undefined ) { 
-            console.log('[WARN]' + printDate() + 'Uninitialized user detected. Reinitializing.'); init(); }
-
         //print what any user has requested.
-        console.log('[INFO]' + printDate() + 'Received POST query:' + JSON.stringify(querystring.decode(request.url, '?')) )
+        console.log('[INFO]' + printTime() + 'Received POST query:' + JSON.stringify(querystring.decode(request.url, '?')) )
 
         switch(querystring.decode(request.url, '?').q) {
             case 'post' : {
-                //create temporary value to store data
-                let recievedData = '';
+                let recievedData = ''; //create temporary value to store data
+
                 request.on('data', (data) => {
-                    recievedData += data
-                    //kill the connection if user tries to send a message longer than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                    if (data.length > 1e6) {
-                        console.log('[WARN]' + printDate() + 'User request too large, destroying connection.')
-                        response.statusCode = 413;
+                    recievedData += data;
+                    if (data.length > 1e6) { //kill the connection if user tries to send a message longer than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                        console.log('[WARN]' + printTime() + 'User request too large, destroying connection.')
+                        response.statusCode = 413; //Request too large
                         request.connection.destroy();
-                    } else {
-                        //generate the additional data relevant to post
-                        let formattedPost = {
-                            postID: token(8), 
-                            content: recievedData,
-                            votes: 1,
-                            date: Date.now(),
-                        }
-                        //echo the formatted post
-                        console.log('[INFO]' + printDate() + JSON.stringify(formattedPost))
-                        //attempt to write post to database
-                        //if an error is encountered, throw status 500
-                    }
-                    response.statusCode = 201;
+                    } 
+                    response.statusCode = 201; //Accepted
+                    let formattedData = JSON.parse(recievedData); //parse the transfer stringified json
+                    
+                    let formattedPost = {
+                        postID: token(8), 
+                        content: formattedData.data,
+                        votes: 1,
+                        date: Date.now(),
+                    } //generate the additional data relevant to post
+
+                    console.log('[INFO]' + printTime() + JSON.stringify(formattedPost)) //echo the formatted post
+                    //attempt to write post to database
+                    //if an error is encountered, throw status 500
                 })
-                
                 break;
             }
             case 'vote' : {
@@ -164,19 +163,17 @@ const server = http.createServer((request, response) => {
                     console.log('user requested to vote on non-existant post')
                     response.statusCode = 403;
                 }
-
                 break;
             }
             default : {
-                //default to 400
-                console.log('user requested invalid query')
-                response.statusCode = 403;
+                console.log('[WARN]' + printTime() + "User requested invalid query. (If this request wasn't made through the client, ignore this.)")
+                response.statusCode = 403; //default to 403
             }
         }
     } 
-    response.end();
+    response.end(); //once all possible actions could have been taken, end communication
 })
 
 server.listen(port, hostname, () => {
-    console.log('[INFO]' + printDate() + `Server running at http://${hostname}:${port}/`); 
+    console.log('[INFO]' + printTime() + `Server running at http://${hostname}:${port}/`); 
 })
