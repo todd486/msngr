@@ -12,6 +12,7 @@ function App() {
     <div className="App">
       {false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
       <div className="main">
+        {false && <div className='new-alert' onClick={fetchPosts()}><span>New Messages</span></div>}
         <MessageManager />
         <div className="chatcontainer">
           <Textarea />
@@ -21,37 +22,45 @@ function App() {
   );
 }
 
-async function fetchPosts(query) {
-  switch(query) {
-    case 'top' : {
-      return new Promise((resolve, reject) => {
-        axios.get(`http://localhost:8080?q=get${query}`)
-          .then(response => {
-            console.log(response)
-            resolve(response)
-          })
-          .catch(error => {
-            reject(error)
-          })
-      })
-    }
-    case 'new' : {
-      //TODO: stream in new messages
-    }
-    default : {
-      console.log('malformed internal get request')
-    }
-  }
+async function fetchPosts() {
+  return new Promise((resolve, reject) => { 
+    axios.get('http://localhost:8080?q=getposts')
+    .then((response) => {
+      let data = response.data
+      //console.log(response)
+      //MOVE TO MESSAGEMANAGER
+      data.sort((a, b) => { return b.date - a.date; }) //sort so newest posts are first
+      resolve(response)
+    })
+    .catch((error) => {
+      console.log(error)
+    })
+  })
 }
 
+// async function checkPosts() {
+//   return new Promise((resolve, reject) => {
+//     axios.get('http://localhost:8080?q=check')
+//     .then((response) => {
+//       console.log(response.data)
+//       resolve(response.data);
+//     })
+//     .catch((error) => {
+//       console.log(error)
+//     })
+//   })
+// }
+
 async function sendData(query, data, postID, action) {
-  console.log('sendData(); | attempting to send : ' + query )
   switch(query) {
     case 'post' : {
       return new Promise((resolve, reject) => {
         axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({data}))
           .then(response => {
             console.log(response)
+            if (response.status === 200) { //check if a status of 200 was returned on POST
+              resolve();
+            } else { reject(); }
           })
           .catch(error => {
             console.log(error)
@@ -84,26 +93,17 @@ class MessageManager extends React.Component {
   }
 
   componentDidMount() {
-    this.timer = setInterval(
-      () => this.refresh(), 1000 )
-    //set an interval to refresh the messages every second
-    this.fetchToComponent('top')
+    this.timer = setInterval(() => this.refresh(), 1000 ) //set an interval to refresh the messages every second
+    this.fetchToComponent();
   }
   componentWillUnmount() { clearInterval(this.timer) }
 
-  componentDidUpdate() {
-    //autoscroll to bottom of chatbox on update
-    const objDiv = document.getElementById('autoscroll');
-    objDiv.scrollTop = objDiv.scrollHeight;
-  }
-
-  fetchToComponent(query) {
-    fetchPosts(query) //promise based fetching
+  fetchToComponent() {
+    fetchPosts() //promise based fetching
     .then(resolve => {
       this.setState({
-        posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
-        //concat the resolved data
-        //TODO: implement check for loading all or single message
+        posts: resolve.data //note to self: push bad, concat good
+        //posts: this.state.posts.concat(resolve.data)
       })
     })
     .catch(reject => {
@@ -112,26 +112,20 @@ class MessageManager extends React.Component {
   }
 
   refresh() {
-    //check if post buffer would be filled
-    if ((this.state.posts.length + 1) > this.var.maxLoadedPosts ) {
-      console.log('buffer filled, removing first array item')
-      this.setState({
-        posts: this.state.posts.splice(1) //splice the first post in array out if buffer is filled
-      })
-    }
+    this.fetchToComponent();
   }
 
   /* mapping the data with a key of {index}, display data.content */
   /* TODO: make the user able to vote on posts */
   render() {
     return (
-      <div className='message-container' id='autoscroll'>
+      <div className='message-container'>
         {this.state.posts.map((data, index) => (
           <div className='message' key={index} value={data.postID}>
             <div className='content'>{data.content}</div>
             <div className='sub-content'>
-              <div className='date'>{new Date(JSON.parse(data.date)).toLocaleTimeString()}</div>
-              <div className='vote'>
+              <div className='date'>{new Date(data.date).toLocaleTimeString()}</div>
+              {false && <div className='vote'>
                 <span className='vote-btn upvote'>
                   <i className='fa fa-chevron-circle-up' 
                   onClick={(upvoteEvent) => {
@@ -147,7 +141,7 @@ class MessageManager extends React.Component {
                     sendData('vote', null, data.postID, 'downvote')
                   }}
                   /></span>
-              </div>
+              </div>}
             </div>
           </div>
         ))}
@@ -165,11 +159,15 @@ class Textarea extends React.Component {
   }
 
   handleClick() {
-    console.log("handle click: attempting to send")
     sendData('post', this.state.messageContent)
+    .then(resolve => {
+      this.setState({messageContent: ''})
+    })
+    .catch(reject => {
+      console.log(reject)
+    })
   }
 
-  //TODO: change this into something that i actually understand how it works
   onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false) {
       e.preventDefault();

@@ -1,139 +1,111 @@
 const http = require('http');
 const querystring = require('querystring');
-const cors = require('cors')
-// const assert = require('assert');
-// const mongoclient = require('mongodb').MongoClient;
+const stream = require('stream')
 
-const posts = require('./posts.json')
+const credit = (`Isabelle ${new Date(Date.now()).getFullYear()}`);
 
 //values related to where and how server is hosted
 const hostname = 'localhost';
 const port = '8080';
-// const databaseurl = `mongodb://${hostname}:27017/`;
 
-//database related
-// const databasename = 'posts'
-// const client = new mongoclient(databaseurl)
+//const httpAgent = new http.Agent({ keepAlive : true });
 
-function printTime() { return ("<" + new Date(Date.now()).toLocaleTimeString() + "> ")}
+//GLOBAL FUNCTIONS
+function printTime() { return (`<${new Date(Date.now()).toLocaleTimeString()}>`) }
+function token(length) { //generates a token of random characters of a specific length
+    const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
+    let output = '';
+    for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
+    return output;
+}
 
-//stream related
-// let resultStream = '';
-// const wStream = new WritableStream({
-//     write(chunk) {
-//         return new Promise((resolve, reject) => {
-//             //create a new buffer where each 'view[0]' is equal to a chunk.
-//             let buffer = new ArrayBuffer(2); let view = new Uint16Array(buffer); view[0] = chunk;
-
-//             let decoded = (new TextDecoder('utf-8')).decode(view, { stream : true }); resultStream += decoded;
-            
-//             resolve();
-//         })
-//     },
-//     close() {
-//         return resultStream;
-//     },
-//     abort(err) {
-//         console.log("[ERROR]" + printTime() + "Sink error: " + err)
-//     }
-// }, (new CountQueuingStrategy({ highWaterMark: 1 })))
-// const defaultWriter = stream.getWriter();
-
+//VARIABLES
+var activePosts = [
+    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()}, 
+    {postID: token(8), content: 'asdasda', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'aboasdasasdw', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'aboasdasdasdw', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'absadasdow', votes: Math.floor(Math.random() * 10), date: Date.now()},
+    {postID: token(8), content: 'abadsasdow', votes: Math.floor(Math.random() * 10), date: Date.now()},
+];
+var newPost = false;
 
 //TODO: session checking, ssl?
 const server = http.createServer(async(request, response) => {
-    response.writeHead(200, { //write header with status 200; allow CORS
+    function refresh() {
+        //activePosts.push({postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()})
+        //console.log(activePosts)
+    }
+
+    //CONFIG
+    response.writeHead(200, { //write header with status 200, allow CORS and set encoding type
         'Access-Control-Allow-Origin' : '*',
         'Content-Type': 'application/json',
-    })
+    }); 
+    request.setEncoding('utf8');
+    server.setTimeout(1000); //Set to timeout after 1 sec 
+    this.timer = setInterval(() => refresh(), 5000 )
 
-    //server functions
-    function token(length) { //generates a token of random characters of a specific length
-        const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
-        let output = '';
-        for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
-        return output;
-    }
-    // async function writeStream(data, stream) {
-    //     const encodedData = (new TextEncoder()).encode(data, { stream : true });
-    //     encodedData.forEach((chunk) => {
-    //         defaultWriter.ready
-    //         .then(() => {
-    //             return defaultWriter.write(chunk);
-    //         })
-    //         .then(() => {
-    //             console.log("[INFO]" + printTime() + "Wrote chunk to sink.")
-    //         })
-    //         .catch((err) => {
-    //             console.log("[ERROR]" + printTime() + "Error writing to sink: " + err)
-    //         })
-    //     })
-    //     defaultWriter.ready
-    //     .then(() => {
-    //         defaultWriter.close()
-    //     })
-    //     .then(() => {
-    //         console.log("[INFO]" + printTime() + "All chunks written.")
-    //     })
-    //     .catch((err) => {
-    //         console.log("[ERROR]" + printTime() + "Stream error:  " + err)
-    //     })
-    // }
+    //GET
+    if (request.method === 'GET') { 
+        console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(request.url, '?'))} from ${request.socket.localAddress}`);
 
-    //GET requests
-    if (request.method === 'GET') {
-        console.log('[INFO]' + printTime() + 'Received GET query:' + JSON.stringify(querystring.decode(request.url, '?')) )
-
-        switch(querystring.decode(request.url, '?').q) {
-
-            //switch this out for a single command to stream all the messages and sort them client side.
-            case 'gettop' : {
-                //get most popular 128 posts for the day
-                //TODO: stream these messages
-                //console.log(writeStream('testing', wStream));
-                response.write(JSON.stringify(posts))
-
-                break;
-            }   
-            case 'getnew' : {
-                //TODO: stream in new posts as they come in
-
+        switch (querystring.decode(request.url, '?').q) { //using switch statement for future functionality
+            case 'getposts' : { 
+                response.write(JSON.stringify(activePosts)); break;
+            }
+            case 'check' : {
+                if (newPost === true) { response.write('true'); } 
+                else { response.write('false'); }
                 break;
             }
-            default : { response.statusCode = 404; }
+            // case 'getvotes' : {
+            //     if (activePosts.find(x => x.postID === querystring.decode(request.url, '?').postID)) {
+
+            //     } else { response.statusCode = 404; }
+            //     break;
+            // }
+            default : { response.statusCode = 404; } //Not found
         }
     } 
 
     //TODO: Implement spam protections and more bad actor protections
-    if (request.method === 'POST') {
-        //print what any user has requested.
-        console.log('[INFO]' + printTime() + 'Received POST query:' + JSON.stringify(querystring.decode(request.url, '?')) )
+    //POST
+    if (request.method === 'POST') { 
+        console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(querystring.decode(request.url, '?'))} from ${request.socket.localAddress}`);
 
-        switch(querystring.decode(request.url, '?').q) {
+        switch (querystring.decode(request.url, '?').q) {
             case 'post' : {
-                let recievedData = ''; //create temporary value to store data
-
-                request.on('data', (data) => {
-                    recievedData += data;
-                    if (data.length > 1e6) { //kill the connection if user tries to send a message longer than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                        console.log('[WARN]' + printTime() + 'User request too large, destroying connection.')
-                        response.statusCode = 413; //Request too large
+                let body = ''; //create temporary value to store body
+                request.on('data', (chunk) => {
+                    if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                        console.log(`[WARN]${printTime()} User sent too large chunk, destroying connection.`)
+                        request.statusCode = 413; //Request too large
                         request.connection.destroy();
-                    } 
-                    response.statusCode = 201; //Accepted
-                    let formattedData = JSON.parse(recievedData); //parse the transfer stringified json
-                    
-                    let formattedPost = {
-                        postID: token(8), 
-                        content: formattedData.data,
-                        votes: 1,
-                        date: Date.now(),
-                    } //generate the additional data relevant to post
+                    } else { body += chunk; } //else add the chunk to body
 
-                    console.log('[INFO]' + printTime() + JSON.stringify(formattedPost)) //echo the formatted post
-                    //attempt to write post to database
-                    //if an error is encountered, throw status 500
-                })
+                    try { request.statusCode = 201; //Accepted
+                        let parsedBody = JSON.parse(body); //parse the transfer stringified json
+                        if (parsedBody.length < 2) { response.statusCode = 401; response.end(); }
+
+                        let formattedPost = {
+                            postID: token(8), 
+                            content: parsedBody.data,
+                            votes: 1,
+                            date: Date.now(),
+                        } //Generate the additional data relevant to post
+
+                        //console.log(`[INFO]${printTime()} Formatted post: ${JSON.stringify(formattedPost)}`) //echo the formatted post (DEBUG)
+                        //cycle the least upvoted post out
+                        activePosts.push(formattedPost);
+
+                    } catch (err) { request.statusCode = 500; //Internal server error
+                        console.log(`[ERROR]${printTime()} Uncaught exception in POST data handling: ${err}`)
+                    }
+                });
+                
                 break;
             }
             case 'vote' : {
@@ -141,33 +113,36 @@ const server = http.createServer(async(request, response) => {
                 //check if post exists, and if user has voted on it already
                 //TODO: make sure user can undo votes
 
-                if (posts.find(x => x.postID === querystring.decode(request.url, '?').postID)) {
+                if (activePosts.find(x => x.postID === querystring.decode(request.url, '?').postID)) {
                     switch(querystring.decode(request.url, '?').v) {
                         case 'upvote' : {
-                            response.statusCode = 202;
+                            try { request.statusCode = 201;
 
+                            } catch (err) { request.statusCode = 500;
+
+                            }
+                            
                             break;
                         }
                         case 'downvote' : {
-                            response.statusCode = 202;
+                            try { request.statusCode = 201;
+
+                            } catch (err) { request.statusCode = 500;
+
+                            }
 
                             break;
                         }
                         default : {
-                            response.statusCode = 403;
-                            console.log('invalid operator on vote')
-                            break;
+                            request.statusCode = 403; console.log(`[WARN]${printTime()} User requested invalid operation on post.`);
                         }
                     }
-                } else {
-                    console.log('user requested to vote on non-existant post')
-                    response.statusCode = 403;
-                }
+                } else { request.statusCode = 403; console.log(`[WARN]${printTime()} User requested to vote on non-existant post.`); }
+
                 break;
             }
             default : {
-                console.log('[WARN]' + printTime() + "User requested invalid query. (If this request wasn't made through the client, ignore this.)")
-                response.statusCode = 403; //default to 403
+                request.statusCode = 403; console.log(`[WARN]${printTime()} User requested invalid query. (If this request wasn't made through the client, ignore this.)`);
             }
         }
     } 
@@ -175,5 +150,5 @@ const server = http.createServer(async(request, response) => {
 })
 
 server.listen(port, hostname, () => {
-    console.log('[INFO]' + printTime() + `Server running at http://${hostname}:${port}/`); 
+    console.log(`[INFO]${printTime()} Server running at http://${hostname}:${port}/, ${credit}`); 
 })

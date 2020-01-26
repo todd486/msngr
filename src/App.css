@@ -6,22 +6,21 @@ html {scroll-behavior: smooth;}
   text-align: center;
   display: flex;
   justify-content: center;
+  background-color: rgb(94,189,255);
 }
 
 .loading {
   position: absolute;
   display: flex;
-  background-color: rgba(0,0,0,0.6);
+  background-color: rgba(255,255,255,0.7);
   height: 100%;
   width: 100%;
   justify-content: center;
-}
-
-.loadingicon {
+} .loadingicon {
   animation: spin 3s cubic-bezier(0.3, 0.85, 0.85, 0.3) 2s infinite;
   align-self: center;
   fill: none;
-  stroke: white;
+  stroke: rgb(94,189,255);
   stroke-width: 6;
   stroke-dasharray: 250;
   stroke-dashoffset: 1000;
@@ -63,6 +62,15 @@ html {scroll-behavior: smooth;}
   width: 100%;
   height: 100%;
   padding: 2vh;
+} .new-alert {
+  display: flex;
+  position: static;
+  justify-content: center;
+  align-items: center;
+  padding: 1vh 0;
+  border-radius: 8px;
+  color: white;
+  background-color: rgb(94,189,255);
 }
 
 .message {
@@ -70,35 +78,25 @@ html {scroll-behavior: smooth;}
   flex-direction: column;
   width: 100%;
   min-height: 8vh;
-  margin-top: 1vh;
+  margin-bottom: 1vh;
   text-align: left;
   padding: 1vh;
-  border-top: 1px solid darkgray;
-}
-
-.content {
+  border-bottom: 1px solid darkgray;
+} .content {
   word-wrap: break-word;
-}
-
-.sub-content {
+} .sub-content {
   display: flex;
-  color: gray;
-}
-
-.date {
+  margin-top: 1vh;
+  color: rgb(94,189,255);
+} .date {
   align-self: flex-end;
   justify-self: stretch;
   font-size: 1vh;
-  
   flex: 1 1;
-}
-
-.vote {
+} .vote {
   font-size: 2vh;
   justify-self: flex-end;
-}
-
-.vote-btn {
+} .vote-btn {
   color: rgb(94,189,255);
   padding: 1vh;
   cursor: pointer;
@@ -119,57 +117,43 @@ html {scroll-behavior: smooth;}
   align-self: flex-end;
   width: 100%;
   padding: 2vh;
-}
-
-.chatstuffs {
+} .chatstuffs {
   display: inline-block;
   align-content: center;
   height: 10vh;
   width: 100%;
   font-size: 2vh;
-}
-
-.userInput {
+} .userArea {
+  display: flex;
+  width: 100%;
+} .userInput {
   border-radius: 6px;
   resize: none;
   width: 100%;
   padding: 1vh;
   margin-right: 1vh;
-}
-
-#send {
+} #send {
   align-self: flex-end;
   border-radius: 6px;
   border: none;
   height: 10vh;
   padding: 1vh;
 
-  background-color: lightgray;
+  background-color: rgb(94,189,255);
   color: white;
   font-size: 3vh;
-  
-}
-
-.userArea {
-  display: flex;
-  width: 100%;
-}
-
-.limit {
+} .limit {
   position: fixed;
   align-self: flex-end;
   height: 20px;
   width: 20px;
-}
-.limiticon {
+} .limiticon {
   fill: none;
-  stroke: deepskyblue;
+  stroke: rgb(94,189,255);
   stroke-width: 4;
   stroke-dasharray: 250;
   stroke-dashoffset: 1000;
-}
-
-.error {
+} .error {
   animation: fadeOut 0.2s ease alternate-reverse both;
   color: crimson;
   display: block;
