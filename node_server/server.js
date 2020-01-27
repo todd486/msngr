@@ -20,24 +20,13 @@ function token(length) { //generates a token of random characters of a specific 
 }
 
 //VARIABLES
-var activePosts = [
-    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()}, 
-    {postID: token(8), content: 'asdasda', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'aboasdasasdw', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'aboasdasdasdw', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'absadasdow', votes: Math.floor(Math.random() * 10), date: Date.now()},
-    {postID: token(8), content: 'abadsasdow', votes: Math.floor(Math.random() * 10), date: Date.now()},
-];
+var activePosts = [];
 var newPost = false;
 
 //TODO: session checking, ssl?
 const server = http.createServer(async(request, response) => {
-    function refresh() {
-        //activePosts.push({postID: token(8), content: 'abow', votes: Math.floor(Math.random() * 10), date: Date.now()})
-        //console.log(activePosts)
-    }
+    this.timer = setInterval(() => refresh(), 5000 )
+    function refresh() {}
 
     //CONFIG
     response.writeHead(200, { //write header with status 200, allow CORS and set encoding type
@@ -46,7 +35,6 @@ const server = http.createServer(async(request, response) => {
     }); 
     request.setEncoding('utf8');
     server.setTimeout(1000); //Set to timeout after 1 sec 
-    this.timer = setInterval(() => refresh(), 5000 )
 
     //GET
     if (request.method === 'GET') { 
