@@ -1,11 +1,27 @@
 import React from 'react';
 import './App.css';
 import axios from 'axios';
+import http from 'http';
+// import Agent from 'agentkeepalive';
 
 /*TODO: move error display outside of textarea
   also add logo, settings menu, as well as filtering for posts*/
 
 //set if loading animation should display
+
+// const keepaliveAgent = new Agent({
+//   maxSockets: 100,
+//   maxFreeSockets: 10,
+//   timeout: 60000, //active socket keepalive for 60 seconds
+//   freeSocketTimeout: 30000, //free socket keepalive for 30 seconds
+// });
+// const options = {
+//   host: 'localhost',
+//   port: 8080,
+//   path: '/',
+//   method: 'GET',
+//   agent: keepaliveAgent,
+// };
 
 function App() {
   return (
@@ -21,35 +37,19 @@ function App() {
     </div>
   );
 }
-
+//, {httpAgent: new http.Agent({ keepAlive: true })}
 async function fetchPosts() {
   return new Promise((resolve, reject) => { 
     axios.get('http://localhost:8080?q=getposts')
     .then((response) => {
-      let data = response.data
-      //console.log(response)
-      //MOVE TO MESSAGEMANAGER
-      data.sort((a, b) => { return b.date - a.date; }) //sort so newest posts are first
-      resolve(response)
+      console.log(response)
+      resolve(response);
     })
     .catch((error) => {
-      console.log(error)
+      reject(error);
     })
   })
 }
-
-// async function checkPosts() {
-//   return new Promise((resolve, reject) => {
-//     axios.get('http://localhost:8080?q=check')
-//     .then((response) => {
-//       console.log(response.data)
-//       resolve(response.data);
-//     })
-//     .catch((error) => {
-//       console.log(error)
-//     })
-//   })
-// }
 
 async function sendData(query, data, postID, action) {
   switch(query) {
@@ -112,7 +112,7 @@ class MessageManager extends React.Component {
   }
 
   refresh() {
-    this.fetchToComponent();
+    //this.fetchToComponent();
   }
 
   /* mapping the data with a key of {index}, display data.content */
