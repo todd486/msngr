@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import axios from 'axios';
-import http from 'http';
+//import http from 'http';
 // import Agent from 'agentkeepalive';
 
 /*TODO: move error display outside of textarea
@@ -27,182 +27,201 @@ function App() {
   return (
     <div className="App">
       {false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
-      <div className="main">
-        {false && <div className='new-alert' onClick={fetchPosts()}><span>New Messages</span></div>}
-        <MessageManager />
-        <div className="chatcontainer">
-          <Textarea />
-        </div>
-      </div>
+      <MessageManager />
     </div>
   );
 }
 //, {httpAgent: new http.Agent({ keepAlive: true })}
 async function fetchPosts() {
-  return new Promise((resolve, reject) => { 
+  return new Promise((resolve, reject) => {
     axios.get('http://localhost:8080?q=getposts')
-    .then((response) => {
-      console.log(response)
-      resolve(response);
-    })
-    .catch((error) => {
-      reject(error);
-    })
+      .then((response) => {
+        if (response.status === 200) {
+          resolve(response);
+        } else { reject(); }
+      })
+      .catch((error) => {
+        reject(error);
+      })
   })
 }
 
-async function sendData(query, data, postID, action) {
-  switch(query) {
-    case 'post' : {
+async function sendData(query, data, id, action) {
+  switch (query) {
+    case 'post': {
       return new Promise((resolve, reject) => {
-        axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({data}))
+        axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({ data }))
           .then(response => {
-            console.log(response)
             if (response.status === 200) { //check if a status of 200 was returned on POST
               resolve();
             } else { reject(); }
           })
           .catch(error => {
             console.log(error)
-          }) 
+          })
       })
     }
-    case 'vote' : {
+    case 'vote': {
       return new Promise((resolve, reject) => {
         //TODO: send post id as well as user id in query as data. verfiy user id serverside
-        axios.post(`http://localhost:8080?q=${query}?postID=${postID}?v=${action}`)
+        axios.post(`http://localhost:8080?q=${query}?id=${id}?v=${action}`)
           .then(response => {
-            resolve(response)
+            if (response.status === 200) { //check if a status of 200 was returned on POST
+              resolve();
+            } else { reject(); }
           })
           .catch(error => {
             reject(error)
           })
       })
     }
-    default : {
-      console.log('malformed internal post request')
-    }
+    default: { console.log('malformed internal post request') }
   }
 }
 
 class MessageManager extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { posts: [] }
-    this.var = { maxLoadedPosts: 128 } //maybe let user configure how many posts to allow at once, since it may decrease performance
+    this.handleClick = this.handleClick.bind(this);
+    this.state = { posts: [], messageContent: '', errorState: '', errorVisible: false, debug: false, settingsShown: false, }
+    this.var = { maxLoadedPosts: 128, maxLength: 128 } //maybe let user configure how many posts to allow at once, since it may decrease performance
   }
 
   componentDidMount() {
-    this.timer = setInterval(() => this.refresh(), 1000 ) //set an interval to refresh the messages every second
+    this.timer = setInterval(() => this.refresh(), 5000) //set an interval to refresh the messages every second
     this.fetchToComponent();
+    // this.setState({
+    //   posts: this.state.posts.sort((a, b) => b.votes - a.votes)
+    // })
   }
-  componentWillUnmount() { clearInterval(this.timer) }
+  componentWillUnmount() { clearInterval(this.timer) };
 
   fetchToComponent() {
+    // if (this.state.maxLoadedPosts > 128) {
+    //   this.setState({
+    //     posts: this.state.posts.splice(0, )
+    //   })
+    // }
     fetchPosts() //promise based fetching
-    .then(resolve => {
-      this.setState({
-        posts: resolve.data //note to self: push bad, concat good
-        //posts: this.state.posts.concat(resolve.data)
+      .then(resolve => {
+        this.setState({
+          posts: resolve.data //note to self: push bad, concat good
+          //posts: this.state.posts.concat(resolve.data)
+        })
       })
-    })
-    .catch(reject => {
-      console.log(reject)
-    })
+      .catch(reject => {
+        console.log(reject)
+      })
   }
 
-  refresh() {
-    //this.fetchToComponent();
-  }
-
-  /* mapping the data with a key of {index}, display data.content */
-  /* TODO: make the user able to vote on posts */
-  render() {
-    return (
-      <div className='message-container'>
-        {this.state.posts.map((data, index) => (
-          <div className='message' key={index} value={data.postID}>
-            <div className='content'>{data.content}</div>
-            <div className='sub-content'>
-              <div className='date'>{new Date(data.date).toLocaleTimeString()}</div>
-              {false && <div className='vote'>
-                <span className='vote-btn upvote'>
-                  <i className='fa fa-chevron-circle-up' 
-                  onClick={(upvoteEvent) => {
-
-                    sendData('vote', null, data.postID, 'upvote')
-                  }}
-                  /></span>
-                <span className='vote-amount'>{data.votes}</span>
-                <span className='vote-btn downvote'>
-                  <i className='fa fa-chevron-circle-down' 
-                  onClick={(downvoteEvent) => {
-
-                    sendData('vote', null, data.postID, 'downvote')
-                  }}
-                  /></span>
-              </div>}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-}
-
-class Textarea extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleClick = this.handleClick.bind(this);
-    this.state = { messageContent: '', errorState: '', errorVisible: false };
-    this.var = { maxLength: 128 };
+  refresh() { 
+    //this.fetchToComponent(); 
   }
 
   handleClick() {
-    sendData('post', this.state.messageContent)
-    .then(resolve => {
-      this.setState({messageContent: ''})
-    })
-    .catch(reject => {
-      console.log(reject)
-    })
-  }
+    const content = this.state.messageContent;
+    if (content.trim().length >= 2) {
+      sendData('post', content)
+      .then(() => {
+        this.setState({ messageContent: '' });
+        this.fetchToComponent();
+      })
+      .catch(reject => {
+        console.log(reject)
+      })
+    }
+  } 
 
   onEnterPress = (e) => {
-    if(e.keyCode === 13 && e.shiftKey === false) {
+    if (e.keyCode === 13 && e.shiftKey === false) {
       e.preventDefault();
       this.handleClick();
     }
   }
 
+  /* mapping the data with a key of {index}, display data.content */
+  
   render() {
-    return(
-      <div className="chatstuffs" >
-        <div className='userArea'>
+    return (
+      <div className='main'>
 
-        <textarea 
-        /* main parameters */
-        className="userInput" 
-        ref="userInputArea" 
-        placeholder="share something!" 
-        maxLength={this.var.maxLength}
+        <div className='options'>
+          <span className='logo noselect'>msngr</span>
+          <button className='btn' onClick={(event) => { 
+            if (this.state.settingsShown === false) { this.setState({settingsShown: true}) } 
+            else { this.setState({settingsShown: false}) } }}>
+            <i className='fa fa-cog' />
+          </button>
+        </div>
+        {this.state.settingsShown && <div className='options-menu'>
+            <h2>Options Menu</h2>
+            <div>Max loaded posts</div>
+            <div>Show debug info</div>
+        </div>}
 
-        /* stuff relevant to render update */
-        value={this.state.messageContent} 
-        autoFocus={true}
-        onChange={(event)=>{
-            this.setState({
-              messageContent: event.target.value
-            });
-        }} //onchange update the state to be whatever the user wrote
-        onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
-        ></textarea>
+        <div className='message-container'>
+          {this.state.posts.map((data, index) => (
+            <div className='message' key={index} value={data.postID}>
+              <div className='content'>{data.content}</div>
+              <div className='sub-content'>
+                <div className='date noselect'>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
+                <div className='vote'>
+                  <span className='vote-btn upvote'>
+                    <i value={false} className='fa fa-chevron-circle-up'
+                      onClick={(upvoteevent) => {
+                        console.log(upvoteevent.target)
+                        console.log(upvoteevent.target.value)
+                        // if (upvoteevent.target.value) {
+                        //   upvoteevent.target.style = 'color: rgb(94,189,255)';
+                        // }
 
-        <button id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
-        {false && <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>/* rendering as false for now*/} 
+                        sendData('vote', null, data.id, 'upvote');
+                        this.fetchToComponent();
+                      }}
+                    /></span>
+                  <span className='vote-amount noselect'>{data.votes}</span>
+                  <span className='vote-btn downvote'>
+                    <i value={false} className='fa fa-chevron-circle-down'
+                      onClick={(downvoteevent) => {
+                        console.log(downvoteevent.target)
+
+                        sendData('vote', null, data.id, 'downvote');
+                        this.fetchToComponent();
+                      }}
+                    /></span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {this.state.errorVisible && <div className="error">Error: {this.state.errorState}</div> /* rendering an element as false && <element> will make it not visible */}
+        <div className="chatstuffs" >
+          <div className='userArea'>
+            <textarea
+              /* main parameters */
+              className="userInput"
+              ref="userInputArea"
+              placeholder="Share something!"
+              maxLength={this.var.maxLength}
+
+              /* stuff relevant to render update */
+              value={this.state.messageContent}
+              autoFocus={true}
+              onChange={(event) => {
+                this.setState({
+                  messageContent: event.target.value
+                });
+              }} //onchange update the state to be whatever the user wrote
+              onKeyDown={this.onEnterPress} //check for enter presses, send the message if detected
+            ></textarea>
+
+            <button className='btn' id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
+            {false && <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>/* rendering as false for now*/}
+          </div>
+
+          {this.state.errorVisible && <div className="error">Error: {this.state.errorState}</div> /* rendering an element as false && <element> will make it not visible */}
+        </div>
+
       </div>
     )
   }
