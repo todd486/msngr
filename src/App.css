@@ -93,6 +93,8 @@ html {scroll-behavior: smooth;}
   border-radius: 8px;
   color: white;
   background-color: rgb(94,189,255);
+} .nopost {
+  color: gray;
 }
 
 .message {
@@ -175,9 +177,7 @@ html {scroll-behavior: smooth;}
   .vote {
     font-size: 20px;
   }
-}
-
-@media only screen and (max-width: 600px) {
+} @media only screen and (max-width: 600px) {
   .main {
     width: 90%;
   }
@@ -186,9 +186,7 @@ html {scroll-behavior: smooth;}
 @keyframes fadeOut {
   0% {opacity: 1;}
   100% {opacity: 0;} 
-} 
-
-@keyframes spin {
+} @keyframes spin {
   from {
     transform: rotate(0deg);
   }

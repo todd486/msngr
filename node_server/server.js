@@ -54,7 +54,7 @@ const server = http.createServer((req, res) => {
 
         //check if last action was less than 2000 ms ago
         if (activeSessions[activeSessions.findIndex(x => x.lastAct)] === undefined) { timeCheck(); } 
-        else { if (Math.abs(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now() < 2000)) {
+        else { if (Math.abs(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 2000) {
                 console.log(`[WARN]${printTime()} User requested to quickly!`);
                 res.statusCode = 403; //Forbidden
                 res.end()
@@ -110,7 +110,7 @@ const server = http.createServer((req, res) => {
             console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
 
             switch (querystring.decode(req.url, '?').q) { //using switch statement for future functionality
-                case 'getposts': { res.write(JSON.stringify(activePosts)); }
+                case 'posts': { res.write(JSON.stringify(activePosts)); }
                 default: { res.statusCode = 404; res.end(); } //Not found
             }
         };
