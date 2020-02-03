@@ -36,6 +36,15 @@ const server = http.createServer((req, res) => {
                 object.splice(index, 1); //splice out the session token
             };
         });
+        //check if a post is below vote threshold (-10 votes)
+        if (actP.forEach(x => {
+            if (x.votes.total <= -10) {
+                console.log(`[INFO]${printTime()} Removed post below threshold. ${x.id}, ${x.votes.total}, ${new Date(x.date).toLocaleTimeString()}`)
+                actP.splice(x, 1)
+            }
+        })) {
+
+        }
     }
     function sessionCheck() { //BUGGED: doesn't really work with checking since last activity was
         let success = false;
@@ -54,6 +63,7 @@ const server = http.createServer((req, res) => {
         //check if last action was less than 2000 ms ago
         if (actS[actS.findIndex(x => x.lastAct)] === undefined) { timeCheck(); }
         else {
+            //console.log(Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000)
             if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000) {
                 console.log(`[WARN]${printTime()} User requested to quickly!`);
                 res.statusCode = 403; //Forbidden
@@ -64,68 +74,46 @@ const server = http.createServer((req, res) => {
         return success;
     }
     function vote(query, id) {
-        //TODO check if user has already voted on a post
-        function apply(act) {
+        function apply() {
             return new Promise((resolve, reject) => {
-                if (actP[actP.findIndex(x => x.id === id)].votes.voters.includes(x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id)) {
-                    //check what action the user has taken, vomit inducing code below
-                    switch (act) {
-                        case 'vote': {
-                            //push the user into the list of users who have voted
-                            actP[actP.findIndex(x => x.id === id)].votes.voters.push({
-                                id: actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id,
-                                action: query
-                            })
-                            resolve();
-                            break;
-                        }
-                        case 'undo': {
-                            switch (actP[actP.findIndex(
-                                x => x.id === id)].votes.voters[actP[actP.findIndex(
-                                    x => x.id === id)].votes.voters.findIndex(
-                                        x => x.id === actS[actS.findIndex(
-                                            x => x.ip === req.socket.localAddress)].id)].action) {
-                                case 'upvote': {
-
-                                    break;
-                                }
-                                case 'downvote': {
-
-                                    break;
-                                }
-                                default: { res.statusCode = 401; reject(`Default in undo switch`) }
-                            }
-                            resolve();
-                            break;
-                        }
-                    }
-                    
+                //if user hasn't taken an action, apply one accordingly
+                if (!actP[actP.findIndex(x => x.id === id)].votes.voters.some(
+                    x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id
+                )) {
+                    //push the user into the list of users who have voted
+                    actP[actP.findIndex(x => x.id === id)].votes.voters.push({
+                        id: actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id,
+                        action: query
+                    })
                 } else {
-                    reject(`Post not found`)
+                    //else remove that action. find index of voters, where the index is equal to the userID
+                    actP[actP.findIndex(x => x.id === id)].votes.voters.splice(
+                        actP[actP.findIndex(x => x.id === id)].votes.voters.findIndex(
+                            x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id), 1)
+                    //then splice it out
                 }
+                resolve();
             })
         }
-
         return new Promise((resolve, reject) => {
-            if (!actP[actP.findIndex(x => x.id === id)].votes.voters.includes(
-                //if a voter can't be found with a corresponding user id, the user can't upvote. bug?
-                x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id
-            )) {
-                
-
-                apply('vote')
-                    .then(() => {
-                        console.log(actP[actP.findIndex(x => x.id === id)].votes.voters)
-                        //update value
-                        actP[actP.findIndex(x => x.id === id)].votes.total = actP[actP.findIndex(x => x.id === id)].votes.voters.length;
-                        resolve();
-                    })
-                    .catch((err) => {
-                        reject(`Exception caught in apply() ${err}`)
-                    })
-            } else {
-                reject(`User has already voted on this post`);
-            }
+            apply()
+                .then(() => {
+                    //console.log(actP[actP.findIndex(x => x.id === id)].votes.voters)
+                    //update value
+                    let tempTotal = 0;
+                    actP[actP.findIndex(x => x.id === id)].votes.voters.forEach(x => {
+                        switch (x.action) {
+                            case 'upvote': { tempTotal++; break; }
+                            case 'downvote': { tempTotal--; break; }
+                            default: { console.log(`[WARN]${printTime()} Defaulted in vote total calc, invalid post data?`) }
+                        }
+                    });
+                    actP[actP.findIndex(x => x.id === id)].votes.total = tempTotal;
+                    resolve();
+                })
+                .catch((err) => {
+                    reject(`Exception caught in apply(): ${err}`)
+                })
         })
     }
 
@@ -143,7 +131,7 @@ const server = http.createServer((req, res) => {
     if (sessionCheck()) {
         //GET
         if (req.method === 'GET') {
-            console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
+            //console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
 
             switch (querystring.decode(req.url, '?').q) { //using switch statement for future functionality
                 case 'posts': {
@@ -179,7 +167,6 @@ const server = http.createServer((req, res) => {
                                     votes: { total: 0, voters: [] },
                                     date: Date.now(),
                                 };
-                                console.log(formattedPost)
                                 actP.push(formattedPost);
                                 res.end();
                             }

@@ -85,8 +85,8 @@ async function sendData(query, data, id, action) {
 class MessageManager extends React.Component {
 	constructor(props) {
 		super(props);
-		this.handleClick = this.handleClick.bind(this);
-		this.state = { posts: [], messageContent: '', debug: false, settingsShown: false, nopost: true }
+		this.handleSend = this.handleSend.bind(this);
+		this.state = { posts: [], messageContent: '', debug: false, settingsShown: false, nopost: true, privacyStatementShown: false }
 		this.var = { maxLoadedPosts: 128, maxLength: 128 } //maybe let user configure how many posts to allow at once, since it may decrease performance
 	}
 
@@ -113,11 +113,9 @@ class MessageManager extends React.Component {
 			})
 	}
 
-	refresh() { //this.fetchToComponent(); 
+	refresh() { this.fetchToComponent(); }
 
-	}
-
-	handleClick() {
+	handleSend() {
 		const content = this.state.messageContent;
 
 		if (content.trim().length >= 2) {
@@ -134,7 +132,7 @@ class MessageManager extends React.Component {
 	onEnterPress = (e) => {
 		if (e.keyCode === 13 && e.shiftKey === false) {
 			e.preventDefault();
-			this.handleClick();
+			this.handleSend();
 		}
 	}
 
@@ -178,7 +176,7 @@ class MessageManager extends React.Component {
 												this.fetchToComponent(); //refresh
 											}}
 										/></span>
-									<span className='vote-amount noselect'>{data.votes.total}</span> 
+									<span className='vote-amount noselect'>{data.votes.total}</span>
 									<span className='vote-btn downvote noselect'>
 										<i className='fa fa-chevron-circle-down'
 											onClick={(downvoteevent) => {
@@ -204,6 +202,9 @@ class MessageManager extends React.Component {
 						{false && <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>}
 					</div>
 				</div>
+
+				{false && <div className='disclaimer noselect' onClick={(event) => {}}><i className='fa fa-exclamation-triangle' /><span>Privacy and content policy</span></div>}
+
 			</div>
 		)
 	}
