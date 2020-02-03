@@ -178,7 +178,7 @@ class MessageManager extends React.Component {
 												this.fetchToComponent(); //refresh
 											}}
 										/></span>
-									<span className='vote-amount noselect'>{data.votes.users.length}</span>
+									<span className='vote-amount noselect'>{data.votes.total}</span> 
 									<span className='vote-btn downvote noselect'>
 										<i className='fa fa-chevron-circle-down'
 											onClick={(downvoteevent) => {

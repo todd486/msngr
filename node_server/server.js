@@ -23,14 +23,14 @@ function token(length) { //generates a token of random characters of a specific 
 }
 
 //VARIABLES
-var activePosts = [];
-var activeSessions = [];
+var actP = [];
+var actS = [];
 
 //TODO: session checking, ssl?
 const server = http.createServer((req, res) => {
     this.timer = setInterval(() => refresh(), 5000); //set an interval to call refresh every 5 seconds
     function refresh() {
-        activeSessions.forEach((item, index, object) => {
+        actS.forEach((item, index, object) => {
             if (Math.abs(item.lastAct - Date.now()) > 1e6) /* each token expires after 1e6 milliseconds ~~~ 16,7 minutes */ {
                 console.log(`[INFO]${printTime()} Session token expired: ${JSON.stringify(object)}`);
                 object.splice(index, 1); //splice out the session token
@@ -41,20 +41,20 @@ const server = http.createServer((req, res) => {
         let success = false;
         function timeCheck() {
             //check if an active session from user already exists
-            if (activeSessions.find(x => x.ip === req.socket.localAddress) === undefined) {
+            if (actS.find(x => x.ip === req.socket.localAddress) === undefined) {
                 console.log(`[INFO]${printTime()} New user found! Initialized user with IP adress: ${req.socket.localAddress}`);
-                activeSessions.push({
+                actS.push({
                     id: token(8),
                     ip: req.socket.localAddress,
                     lastAct: new Date(Date.now()),
                 }); //push a new session into memory
-            } else { activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now(); };
+            } else { actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now(); };
             //else: update the user's current last action to be now
         }
         //check if last action was less than 2000 ms ago
-        if (activeSessions[activeSessions.findIndex(x => x.lastAct)] === undefined) { timeCheck(); }
+        if (actS[actS.findIndex(x => x.lastAct)] === undefined) { timeCheck(); }
         else {
-            if (Math.abs(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000) {
+            if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000) {
                 console.log(`[WARN]${printTime()} User requested to quickly!`);
                 res.statusCode = 403; //Forbidden
                 res.end()
@@ -65,34 +65,64 @@ const server = http.createServer((req, res) => {
     }
     function vote(query, id) {
         //TODO check if user has already voted on a post
-        return new Promise((resolve, reject) => { //if statement bugged always returns false
-            if (activePosts[activePosts.findIndex(x => x.id === id)].votes.users.includes(
-                activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id
-            ) === false) {
-                //push the user into the list of users who have voted
-                activePosts[activePosts.findIndex(x => x.id === id)].votes.users.push({
-                    id: activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id, 
-                    action: ''
-                })
+        function apply(act) {
+            return new Promise((resolve, reject) => {
+                if (actP[actP.findIndex(x => x.id === id)].votes.voters.includes(x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id)) {
+                    //check what action the user has taken, vomit inducing code below
+                    switch (act) {
+                        case 'vote': {
+                            //push the user into the list of users who have voted
+                            actP[actP.findIndex(x => x.id === id)].votes.voters.push({
+                                id: actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id,
+                                action: query
+                            })
+                            resolve();
+                            break;
+                        }
+                        case 'undo': {
+                            switch (actP[actP.findIndex(
+                                x => x.id === id)].votes.voters[actP[actP.findIndex(
+                                    x => x.id === id)].votes.voters.findIndex(
+                                        x => x.id === actS[actS.findIndex(
+                                            x => x.ip === req.socket.localAddress)].id)].action) {
+                                case 'upvote': {
 
-                switch (query) {
-                    case 'upvote': {
+                                    break;
+                                }
+                                case 'downvote': {
 
-                        break;
+                                    break;
+                                }
+                                default: { res.statusCode = 401; reject(`Default in undo switch`) }
+                            }
+                            resolve();
+                            break;
+                        }
                     }
-                    case 'downvote': {
-
-                        break;
-                    }
-                    case 'undo': {
-                        //TODO: implement undo function
-                        break;
-                    }
-                    default: { res.statusCode = 401; reject('Defaulted, invalid query.') }
+                    
+                } else {
+                    reject(`Post not found`)
                 }
-                //update value
-                activePosts[activePosts.findIndex(x => x.id === id)].votes.total = activePosts[activePosts.findIndex(x => x.id === id)].votes.users.length;
-                resolve();
+            })
+        }
+
+        return new Promise((resolve, reject) => {
+            if (!actP[actP.findIndex(x => x.id === id)].votes.voters.includes(
+                //if a voter can't be found with a corresponding user id, the user can't upvote. bug?
+                x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id
+            )) {
+                
+
+                apply('vote')
+                    .then(() => {
+                        console.log(actP[actP.findIndex(x => x.id === id)].votes.voters)
+                        //update value
+                        actP[actP.findIndex(x => x.id === id)].votes.total = actP[actP.findIndex(x => x.id === id)].votes.voters.length;
+                        resolve();
+                    })
+                    .catch((err) => {
+                        reject(`Exception caught in apply() ${err}`)
+                    })
             } else {
                 reject(`User has already voted on this post`);
             }
@@ -117,7 +147,7 @@ const server = http.createServer((req, res) => {
 
             switch (querystring.decode(req.url, '?').q) { //using switch statement for future functionality
                 case 'posts': {
-                    res.write(JSON.stringify(activePosts));
+                    res.write(JSON.stringify(actP));
                 }
                 default: { res.statusCode = 404; res.end(); } //Not found
             }
@@ -146,11 +176,11 @@ const server = http.createServer((req, res) => {
                                 let formattedPost = { //Generate the additional data relevant to post
                                     id: token(8),
                                     content: parsedBody.data,
-                                    votes: { users: [{}] },
+                                    votes: { total: 0, voters: [] },
                                     date: Date.now(),
                                 };
                                 console.log(formattedPost)
-                                activePosts.push(formattedPost);
+                                actP.push(formattedPost);
                                 res.end();
                             }
                         } catch (err) {
@@ -164,7 +194,7 @@ const server = http.createServer((req, res) => {
                 case 'vote': {
                     //TODO: make sure user can undo votes and that votes cant be cast more than once
 
-                    if (activePosts.find(x => x.id === querystring.decode(req.url, '?').id)) {
+                    if (actP.find(x => x.id === querystring.decode(req.url, '?').id)) {
                         vote(querystring.decode(req.url, '?').v, querystring.decode(req.url, '?').id)
                             .then(() => {
                                 res.end();
