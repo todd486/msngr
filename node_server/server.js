@@ -64,31 +64,34 @@ const server = http.createServer((req, res) => {
         return success;
     }
     function vote(query, id) {
-        return new Promise((resolve, reject) => {
-            switch (query) {
-                case 'upvote': {
-                    try {
-                        activePosts[activePosts.findIndex(x => x.id === id)].votes += 1;
-                        console.log(activePosts[activePosts.findIndex(x => x.id === id)].votes)
-                        resolve();
-                    } catch (err) {
-                        res.statusCode = 401;
-                        reject(err);
+        //TODO check if user has already voted on a post
+        return new Promise((resolve, reject) => { //BUG: [WARN]<9:39:44> Rejected vote query. TypeError: pOnguFtH is not a function
+            if (activePosts[activePosts.findIndex(x => x.id === id)].votes.users.find(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id)) {
+                switch (query) {
+                    case 'upvote': { //TODO: don't repeat myself like this 
+                        try {
+                            activePosts[activePosts.findIndex(x => x.id === id)].votes.total += 1;
+                            resolve();
+                        } catch (err) {
+                            res.statusCode = 401;
+                            reject(err);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 'downvote': {
-                    try {
-                        activePosts[activePosts.findIndex(x => x.id === id)].votes -= 1;
-                        console.log(activePosts[activePosts.findIndex(x => x.id === id)].votes)
-                        resolve();
-                    } catch (err) {
-                        res.statusCode = 401;
-                        reject(err);
+                    case 'downvote': {
+                        try {
+                            activePosts[activePosts.findIndex(x => x.id === id)].votes.total -= 1;
+                            resolve();
+                        } catch (err) {
+                            res.statusCode = 401;
+                            reject(err);
+                        }
+                        break;
                     }
-                    break;
+                    default: { res.statusCode = 401; reject('Defaulted, invalid query.') }
                 }
-                default: { res.statusCode = 401; reject('Defaulted, invalid query.') }
+            } else {
+                reject(`User has already voted on this post`);
             }
         })
     }
@@ -139,9 +142,10 @@ const server = http.createServer((req, res) => {
                                 let formattedPost = { //Generate the additional data relevant to post
                                     id: token(8),
                                     content: parsedBody.data,
-                                    votes: 1,
+                                    votes: {total: 1, users: [activeSessions[activeSessions.findIndex(x => x.lastAct)].id]},
                                     date: Date.now(),
                                 };
+                                console.log(formattedPost)
                                 activePosts.push(formattedPost);
                                 res.end();
                             }
@@ -163,7 +167,7 @@ const server = http.createServer((req, res) => {
                             })
                             .catch((reject) => {
                                 console.log(`[WARN]${printTime()} Rejected vote query. ${reject}`)
-                                res.end(reject.toString());
+                                res.end();
                             })
 
                     } else { req.statusCode = 403; console.log(`[WARN]${printTime()} User requested to vote on non-existant post.`); }

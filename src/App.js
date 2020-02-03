@@ -37,7 +37,7 @@ async function fetchData() {
 		axios.get(`http://localhost:8080?q=posts`)
 			.then((response) => {
 				if (response.status === 200) {
-					//check if response was empty, if so; reject.
+					//check if response.data was empty, if so; reject. since rendering empty objects in react can cause everything to crash
 					if (response.data.length <= 0) { reject('Response data too short to render!'); }
 					else { resolve(response); }
 
@@ -171,13 +171,13 @@ class MessageManager extends React.Component {
 									<span className='vote-btn upvote noselect'>
 										<i className='fa fa-chevron-circle-up'
 											onClick={(upvoteevent) => {
-												console.log(upvoteevent.target);
+												console.log(upvoteevent.target); //TODO: read the value of <i />
 
 												sendData('vote', null, data.id, 'upvote'); 
 												this.fetchToComponent(); //refresh
 											}}
 										/></span>
-									<span className='vote-amount noselect'>{data.votes}</span>
+									<span className='vote-amount noselect'>{data.votes.total}</span>
 									<span className='vote-btn downvote noselect'>
 										<i className='fa fa-chevron-circle-down'
 											onClick={(downvoteevent) => {
