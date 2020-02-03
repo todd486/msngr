@@ -114,10 +114,11 @@ class MessageManager extends React.Component {
 	}
 
 	refresh() { //this.fetchToComponent(); 
-		
+
 	}
 
-	handleClick() { const content = this.state.messageContent;
+	handleClick() {
+		const content = this.state.messageContent;
 
 		if (content.trim().length >= 2) {
 			sendData('post', content)
@@ -159,7 +160,7 @@ class MessageManager extends React.Component {
 				</div>}
 
 				<div className='message-container'>
-					
+
 					{this.state.nopost && <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div>}
 
 					{this.state.posts.map((data, index) => (
@@ -173,17 +174,17 @@ class MessageManager extends React.Component {
 											onClick={(upvoteevent) => {
 												console.log(upvoteevent.target); //TODO: read the value of <i />
 
-												sendData('vote', null, data.id, 'upvote'); 
+												sendData('vote', null, data.id, 'upvote');
 												this.fetchToComponent(); //refresh
 											}}
 										/></span>
-									<span className='vote-amount noselect'>{data.votes.total}</span>
+									<span className='vote-amount noselect'>{data.votes.users.length}</span>
 									<span className='vote-btn downvote noselect'>
 										<i className='fa fa-chevron-circle-down'
 											onClick={(downvoteevent) => {
 												console.log(downvoteevent.target);
 
-												sendData('vote', null, data.id, 'downvote'); 
+												sendData('vote', null, data.id, 'downvote');
 												this.fetchToComponent(); //refresh
 											}}
 										/></span>

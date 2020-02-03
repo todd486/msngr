@@ -37,7 +37,7 @@ const server = http.createServer((req, res) => {
             };
         });
     }
-    function sessionCheck() {
+    function sessionCheck() { //BUGGED: doesn't really work with checking since last activity was
         let success = false;
         function timeCheck() {
             //check if an active session from user already exists
@@ -51,45 +51,48 @@ const server = http.createServer((req, res) => {
             } else { activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now(); };
             //else: update the user's current last action to be now
         }
-
         //check if last action was less than 2000 ms ago
-        if (activeSessions[activeSessions.findIndex(x => x.lastAct)] === undefined) { timeCheck(); } 
-        else { if (Math.abs(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 2000) {
+        if (activeSessions[activeSessions.findIndex(x => x.lastAct)] === undefined) { timeCheck(); }
+        else {
+            if (Math.abs(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000) {
                 console.log(`[WARN]${printTime()} User requested to quickly!`);
                 res.statusCode = 403; //Forbidden
                 res.end()
             } else { success = true; }
-        } 
+        }
         timeCheck();
         return success;
     }
     function vote(query, id) {
         //TODO check if user has already voted on a post
-        return new Promise((resolve, reject) => { //BUG: [WARN]<9:39:44> Rejected vote query. TypeError: pOnguFtH is not a function
-            if (activePosts[activePosts.findIndex(x => x.id === id)].votes.users.find(activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id)) {
+        return new Promise((resolve, reject) => { //if statement bugged always returns false
+            if (activePosts[activePosts.findIndex(x => x.id === id)].votes.users.includes(
+                activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id
+            ) === false) {
+                //push the user into the list of users who have voted
+                activePosts[activePosts.findIndex(x => x.id === id)].votes.users.push({
+                    id: activeSessions[activeSessions.findIndex(x => x.ip === req.socket.localAddress)].id, 
+                    action: ''
+                })
+
                 switch (query) {
-                    case 'upvote': { //TODO: don't repeat myself like this 
-                        try {
-                            activePosts[activePosts.findIndex(x => x.id === id)].votes.total += 1;
-                            resolve();
-                        } catch (err) {
-                            res.statusCode = 401;
-                            reject(err);
-                        }
+                    case 'upvote': {
+
                         break;
                     }
                     case 'downvote': {
-                        try {
-                            activePosts[activePosts.findIndex(x => x.id === id)].votes.total -= 1;
-                            resolve();
-                        } catch (err) {
-                            res.statusCode = 401;
-                            reject(err);
-                        }
+
+                        break;
+                    }
+                    case 'undo': {
+                        //TODO: implement undo function
                         break;
                     }
                     default: { res.statusCode = 401; reject('Defaulted, invalid query.') }
                 }
+                //update value
+                activePosts[activePosts.findIndex(x => x.id === id)].votes.total = activePosts[activePosts.findIndex(x => x.id === id)].votes.users.length;
+                resolve();
             } else {
                 reject(`User has already voted on this post`);
             }
@@ -107,18 +110,19 @@ const server = http.createServer((req, res) => {
     req.setEncoding('utf8');
     server.setTimeout(1000); //Set to timeout after 1 sec 
 
-    if (sessionCheck() === true) {
+    if (sessionCheck()) {
         //GET
         if (req.method === 'GET') {
             console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
 
             switch (querystring.decode(req.url, '?').q) { //using switch statement for future functionality
-                case 'posts': { res.write(JSON.stringify(activePosts)); }
+                case 'posts': {
+                    res.write(JSON.stringify(activePosts));
+                }
                 default: { res.statusCode = 404; res.end(); } //Not found
             }
         };
 
-        //TODO: Implement spam protections and more bad actor protections
         //POST
         if (req.method === 'POST') {
             console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
@@ -128,7 +132,7 @@ const server = http.createServer((req, res) => {
                     let body = ''; //create temporary value to store body
                     req.on('data', (chunk) => {
                         if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                            console.log(`[WARN]${printTime()} User sent too large chunk, destroying connection.`)
+                            console.log(`[WARN]${printTime()} User sent chunk larger than 1MB, destroying connection!`)
                             req.statusCode = 413; //Request too large
                             req.connection.destroy();
                         } else { body += chunk; } //else add the chunk to body
@@ -142,7 +146,7 @@ const server = http.createServer((req, res) => {
                                 let formattedPost = { //Generate the additional data relevant to post
                                     id: token(8),
                                     content: parsedBody.data,
-                                    votes: {total: 1, users: [activeSessions[activeSessions.findIndex(x => x.lastAct)].id]},
+                                    votes: { users: [{}] },
                                     date: Date.now(),
                                 };
                                 console.log(formattedPost)
