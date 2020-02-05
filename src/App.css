@@ -13,9 +13,8 @@ html {
   text-align: center;
   display: flex;
   justify-content: center;
-  background-color: rgb(94, 189, 255);
+  background-color: #5ebcff;
 }
-
 
 .loading {
   position: absolute;
@@ -30,7 +29,7 @@ html {
   animation: spin 3s cubic-bezier(0.3, 0.85, 0.85, 0.3) 2s infinite;
   align-self: center;
   fill: none;
-  stroke: rgb(94, 189, 255);
+  stroke: #5ebcff;
   stroke-width: 6;
   stroke-dasharray: 250;
   stroke-dashoffset: 1000;
@@ -40,7 +39,7 @@ html {
   background-color: white;
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
   border-radius: 8px 0 8px 8px;
-  border: 1px solid lightgray;
+  border: 1px solid #d3d3d3;
   margin: 2vh;
   width: 60%;
   min-width: 50vw;
@@ -61,14 +60,14 @@ html {
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
 }
 
-.disclaimer > i {
+.disclaimer>i {
   margin-right: 1vh;
 }
 
 .options {
   display: flex;
   border-radius: 6px 6px 0 0;
-  background-color: rgb(94, 189, 255);
+  background-color: #5ebcff;
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
   align-items: flex-end;
   z-index: 3;
@@ -101,7 +100,7 @@ html {
 .btn {
   padding: 0.8vh;
   border: none;
-  background-color: rgb(94, 189, 255);
+  background-color: #5ebcff;
   color: white;
   font-size: 2vh;
   border-radius: 6px;
@@ -128,7 +127,7 @@ html {
   padding: 1vh 0;
   border-radius: 8px;
   color: white;
-  background-color: rgb(94, 189, 255);
+  background-color: #5ebcff;
 }
 
 .nopost {
@@ -154,7 +153,7 @@ html {
 .sub-content {
   display: flex;
   margin-top: 1vh;
-  color: rgb(94, 189, 255);
+  color: #5ebcff;
 }
 
 .date {
@@ -170,13 +169,13 @@ html {
 }
 
 .vote-btn {
-  color: lightgray;
   padding: 1vh;
   cursor: pointer;
+  color: #5ebcff;
 }
 
 .chatstuffs {
-  border-top: 1px solid lightgray;
+  border-top: 1px solid #d3d3d3;
   align-self: flex-end;
   width: 100%;
   padding: 2vh;
@@ -187,6 +186,7 @@ html {
 }
 
 .userArea {
+  
   display: flex;
   width: 100%;
 }
@@ -206,18 +206,9 @@ html {
 }
 
 .limit {
+  display: inline-flex;
   position: fixed;
   align-self: flex-end;
-  height: 20px;
-  width: 20px;
-}
-
-.limiticon {
-  fill: none;
-  stroke: rgb(94, 189, 255);
-  stroke-width: 4;
-  stroke-dasharray: 250;
-  stroke-dashoffset: 1000;
 }
 
 .error {
@@ -228,6 +219,16 @@ html {
   font-size: 1.7vh;
   border-top: 1px solid crimson;
   margin-top: 1vh;
+}
+
+.dis {
+  margin-top: 1vh;
+  font-size: 1vh;
+  color: grey;
+}
+.dis > i {
+  font-size: 1.4vh;
+  cursor: pointer;
 }
 
 @media only screen and (max-height: 770px) {
@@ -272,8 +273,9 @@ html {
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgb(94, 189, 255);
+  background: #5ebcff;
 }
 
 ::-webkit-scrollbar-thumb:hover {

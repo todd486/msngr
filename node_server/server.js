@@ -23,7 +23,7 @@ function token(length) { //generates a token of random characters of a specific 
 };
 
 //VARIABLES
-var actP = [{ id: token(8), content: 'example', votes: { total: 0, voters: [{ id: token(8) }, { id: token(8) }, { id: token(8) }] }, date: Date.now() }];
+var actP = [];
 var actS = [];
 var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
 
@@ -151,13 +151,15 @@ const server = http.createServer((req, res) => {
                 verbose && console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
                 switch (qs.decode(req.url, '?').q) { //using switch statement for future functionality
                     case 'posts': {
-                        res.write(JSON.stringify(actP)); //TODO: filter out the user id's of those who have voted so it doesn't get sent out to the client, does it matter though?
+                        res.write(JSON.stringify(actP));
+                        //TODO: filter out the user id's of those who have voted so it doesn't get sent out to the client, does it matter though?
                     }
                     default: {
                         res.statusCode = 404; //Not found
                         res.end();
                     }
                 }
+                break;
             };
             case 'POST': {
                 verbose && console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
@@ -222,6 +224,7 @@ const server = http.createServer((req, res) => {
                         console.log(`[WARN]${printTime()} User requested invalid query. (If this request wasn't made through the client, ignore this.)`);
                     }
                 }
+                break;
             };
             default : {
                 res.statusCode = 405; //Method Not Supported

@@ -86,21 +86,33 @@ class MessageManager extends React.Component {
 	constructor(props) {
 		super(props);
 		this.handleSend = this.handleSend.bind(this);
-		this.state = { posts: [], messageContent: '', debug: false, settingsShown: false, nopost: true, privacyStatementShown: false }
-		this.var = { maxLoadedPosts: 128, maxLength: 128 } //maybe let user configure how many posts to allow at once, since it may decrease performance
+		this.var = {
+			maxLoadedPosts: 128,
+			maxLength: 128,
+		}
+		this.state = {
+			posts: [],
+			messageContent: '',
+			debug: false,
+			settingsShown: false,
+			nopost: true,
+			disclaimer: true,
+		}
+		//maybe let user configure how many posts to allow at once, since it may decrease performance
 	}
 
 	componentDidMount() {
 		this.timer = setInterval(() => this.refresh(), 1000) //set an interval to refresh the messages every second
 		this.fetchToComponent();
+
 		// this.setState({
 		//   posts: this.state.posts.sort((a, b) => b.votes - a.votes)
 		// })
 	}
 	componentWillUnmount() { clearInterval(this.timer) };
 
-	fetchToComponent() {
-		fetchData() //promise based fetching
+	async fetchToComponent() {
+		await fetchData() //promise based fetching
 			.then(resolve => {
 				this.setState({
 					nopost: false, posts: resolve.data
@@ -115,11 +127,11 @@ class MessageManager extends React.Component {
 
 	refresh() { this.fetchToComponent(); }
 
-	handleSend() {
+	async handleSend() {
 		const content = this.state.messageContent;
 
 		if (content.trim().length >= 2) {
-			sendData('post', content)
+			await sendData('post', content)
 				.then(() => {
 					this.setState({ messageContent: '' });
 					this.fetchToComponent();
@@ -170,7 +182,6 @@ class MessageManager extends React.Component {
 									<span className='vote-btn upvote noselect'>
 										<i className='fa fa-chevron-circle-up'
 											onClick={(upvoteevent) => {
-												console.log(upvoteevent.target); //TODO: read the value of <i />
 
 												sendData('vote', null, data.id, 'upvote');
 												this.fetchToComponent(); //refresh
@@ -180,7 +191,6 @@ class MessageManager extends React.Component {
 									<span className='vote-btn downvote noselect'>
 										<i className='fa fa-chevron-circle-down'
 											onClick={(downvoteevent) => {
-												console.log(downvoteevent.target);
 
 												sendData('vote', null, data.id, 'downvote');
 												this.fetchToComponent(); //refresh
@@ -196,15 +206,21 @@ class MessageManager extends React.Component {
 					<div className='userArea'>
 						<textarea className="userInput" ref="userInputArea" placeholder="Share something!"
 							maxLength={this.var.maxLength} value={this.state.messageContent} autoFocus={true}
-							onChange={(event) => { this.setState({ messageContent: event.target.value }); }} onKeyDown={this.onEnterPress} />
+							onChange={(event) => {
+								this.setState({
+									messageContent: event.target.value,
+
+								});
+							}}
+							onKeyDown={this.onEnterPress} />
 
 						<button className='btn' id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
-						{false && <div className='limit'><svg className="limiticon" height="20" width="20"><circle cx="10" cy="10" r="8" /></svg></div>}
+						{false && <canvas className='limit noselect' width={20} height={20}></canvas>}
 					</div>
+					{this.state.disclaimer && <p className='dis'>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight.
+					<i className='fa fa-close' onClick={() => {this.setState({disclaimer: false})}} /></p>}
+					
 				</div>
-
-				{false && <div className='disclaimer noselect' onClick={(event) => {}}><i className='fa fa-exclamation-triangle' /><span>Privacy and content policy</span></div>}
-
 			</div>
 		)
 	}
