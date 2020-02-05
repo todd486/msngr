@@ -1,7 +1,7 @@
 const http = require('http');
-const querystring = require('querystring');
+const qs = require('querystring');
 // const Agent = require('agentkeepalive');
-const stream = require('stream');
+// const stream = require('stream');
 
 const credit = (`Isabelle ${new Date(Date.now()).getFullYear()}`);
 
@@ -15,21 +15,24 @@ const port = '8080';
 // })
 
 //GLOBAL FUNCTIONS
-function printTime() { return (`<${new Date(Date.now()).toLocaleTimeString()}>`) }
+function printTime() { return (`<${new Date(Date.now()).toLocaleTimeString()}>`) };
 function token(length) { //generates a token of random characters of a specific length
     const validChar = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789';
     let output = ''; for (let i = 0; i < length; i++) { output += validChar.charAt(Math.floor(Math.random() * validChar.length)) }
     return output;
-}
+};
 
 //VARIABLES
-var actP = [];
+var actP = [{ id: token(8), content: 'example', votes: { total: 0, voters: [{ id: token(8) }, { id: token(8) }, { id: token(8) }] }, date: Date.now() }];
 var actS = [];
+var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
 
-//TODO: session checking, ssl?
+//TODO: implement optional chaining: object?.type?.subtype; if any of the types cannot be found the app won't crash and can simply continue without the strict type
 const server = http.createServer((req, res) => {
     this.timer = setInterval(() => refresh(), 5000); //set an interval to call refresh every 5 seconds
-    function refresh() {
+
+    //SERVERSIDE FUNCTIONS
+    function refresh() { //define what should occur during each refresh
         actS.forEach((item, index, object) => {
             if (Math.abs(item.lastAct - Date.now()) > 1e6) /* each token expires after 1e6 milliseconds ~~~ 16,7 minutes */ {
                 console.log(`[INFO]${printTime()} Session token expired: ${JSON.stringify(object)}`);
@@ -42,57 +45,70 @@ const server = http.createServer((req, res) => {
                 console.log(`[INFO]${printTime()} Removed post below threshold. ${x.id}, ${x.votes.total}, ${new Date(x.date).toLocaleTimeString()}`)
                 actP.splice(x, 1)
             }
-        })) {
-
-        }
-    }
-    function sessionCheck() { //BUGGED: doesn't really work with checking since last activity was
+        }));
+    };
+    function sessionCheck() {
+        //console.time();
         let success = false;
-        function timeCheck() {
-            //check if an active session from user already exists
+        function timeCheck(query) {
+            switch (query) {
+                case 'init': {
+                    console.log(`[INFO]${printTime()} New user found! Initialized user with IP adress: ${req.socket.localAddress}`);
+                    actS.push({ //push a new session into memory
+                        id: token(8),
+                        ip: req.socket.localAddress,
+                        lastAct: new Date(Date.now()),
+                    });
+                    break;
+                }
+                case 'update': {
+                    actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now();
+                    break;
+                }
+                default: {
+                    console.log(`[WARN]${printTime()} Default in timeCheck().`)
+                }
+            }
+        };
+        try { //check if last action was less than 500 ms ago
             if (actS.find(x => x.ip === req.socket.localAddress) === undefined) {
-                console.log(`[INFO]${printTime()} New user found! Initialized user with IP adress: ${req.socket.localAddress}`);
-                actS.push({
-                    id: token(8),
-                    ip: req.socket.localAddress,
-                    lastAct: new Date(Date.now()),
-                }); //push a new session into memory
-            } else { actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now(); };
-            //else: update the user's current last action to be now
-        }
-        //check if last action was less than 2000 ms ago
-        if (actS[actS.findIndex(x => x.lastAct)] === undefined) { timeCheck(); }
-        else {
-            //console.log(Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000)
-            if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 1000) {
-                console.log(`[WARN]${printTime()} User requested to quickly!`);
+                timeCheck('init');
+            }
+            if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct, Date.now()) < 500) {
                 res.statusCode = 403; //Forbidden
-                res.end()
-            } else { success = true; }
+                res.end();
+                throw new Error(`User requested to quickly!`);
+            } else {
+                success = true;
+            }
+        } catch (err) {
+            console.log(`[WARN] Exception caught in sessionCheck(). ${err}`)
+        } finally { //if exception is caught, timeCheck() should run and should cause the try statement to succeed
+            timeCheck('update');
+            return success;
         }
-        timeCheck();
-        return success;
-    }
+    };
     function vote(query, id) {
         function apply() {
             return new Promise((resolve, reject) => {
-                //if user hasn't taken an action, apply one accordingly
-                if (!actP[actP.findIndex(x => x.id === id)].votes.voters.some(
-                    x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id
-                )) {
-                    //push the user into the list of users who have voted
-                    actP[actP.findIndex(x => x.id === id)].votes.voters.push({
-                        id: actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id,
-                        action: query
-                    })
-                } else {
-                    //else remove that action. find index of voters, where the index is equal to the userID
-                    actP[actP.findIndex(x => x.id === id)].votes.voters.splice(
-                        actP[actP.findIndex(x => x.id === id)].votes.voters.findIndex(
-                            x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id), 1)
-                    //then splice it out
+                try { //if user hasn't taken an action, apply one accordingly
+                    if (!actP[actP.findIndex(x => x.id === id)].votes.voters.some(
+                        x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id
+                    )) { //push the user into the list of users who have voted
+                        actP[actP.findIndex(x => x.id === id)].votes.voters.push({
+                            id: actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id,
+                            action: query
+                        })
+                    } else { //else remove that action. find index of voters, where the index is equal to the userID
+                        actP[actP.findIndex(x => x.id === id)].votes.voters.splice(
+                            actP[actP.findIndex(x => x.id === id)].votes.voters.findIndex(
+                                x => x.id === actS[actS.findIndex(x => x.ip === req.socket.localAddress)].id), 1)
+                        //then splice it out
+                    }
+                    resolve();
+                } catch (err) {
+                    reject(`${err}`);
                 }
-                resolve();
             })
         }
         return new Promise((resolve, reject) => {
@@ -115,7 +131,7 @@ const server = http.createServer((req, res) => {
                     reject(`Exception caught in apply(): ${err}`)
                 })
         })
-    }
+    };
 
     //CONFIG
     res.writeHead(200, { //write header with status 200, allow CORS and set encoding type
@@ -128,77 +144,94 @@ const server = http.createServer((req, res) => {
     req.setEncoding('utf8');
     server.setTimeout(1000); //Set to timeout after 1 sec 
 
+    //MAIN
     if (sessionCheck()) {
-        //GET
-        if (req.method === 'GET') {
-            //console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
-
-            switch (querystring.decode(req.url, '?').q) { //using switch statement for future functionality
-                case 'posts': {
-                    res.write(JSON.stringify(actP));
+        switch (req.method) {
+            case 'GET': {
+                verbose && console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
+                switch (qs.decode(req.url, '?').q) { //using switch statement for future functionality
+                    case 'posts': {
+                        res.write(JSON.stringify(actP)); //TODO: filter out the user id's of those who have voted so it doesn't get sent out to the client, does it matter though?
+                    }
+                    default: {
+                        res.statusCode = 404; //Not found
+                        res.end();
+                    }
                 }
-                default: { res.statusCode = 404; res.end(); } //Not found
-            }
-        };
-
-        //POST
-        if (req.method === 'POST') {
-            console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(querystring.decode(req.url, '?'))} from ${req.socket.localAddress}`);
-
-            switch (querystring.decode(req.url, '?').q) {
-                case 'post': {
-                    let body = ''; //create temporary value to store body
-                    req.on('data', (chunk) => {
-                        if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                            console.log(`[WARN]${printTime()} User sent chunk larger than 1MB, destroying connection!`)
-                            req.statusCode = 413; //Request too large
-                            req.connection.destroy();
-                        } else { body += chunk; } //else add the chunk to body
-
-                        try {
-                            req.statusCode = 201; //Accepted
-                            let parsedBody = JSON.parse(body); //parse the transfer stringified json
-
-                            if (parsedBody.toString() <= 1) { res.statusCode = 401; res.end(); } //check if message length would be less than one char
-                            else {
-                                let formattedPost = { //Generate the additional data relevant to post
-                                    id: token(8),
-                                    content: parsedBody.data,
-                                    votes: { total: 0, voters: [] },
-                                    date: Date.now(),
-                                };
-                                actP.push(formattedPost);
-                                res.end();
+            };
+            case 'POST': {
+                verbose && console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
+                switch (qs.decode(req.url, '?').q) {
+                    case 'post': {
+                        let body = ''; //create temporary value to store body
+                        req.on('data', (chunk) => {
+                            if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                                console.log(`[WARN]${printTime()} User sent chunk larger than 1MB, destroying connection!`)
+                                req.statusCode = 413; //Request too large
+                                req.connection.destroy();
+                            } else { //else add the chunk to body
+                                body += chunk;
                             }
-                        } catch (err) {
-                            req.statusCode = 500; //Internal server error
-                            console.log(`[ERROR]${printTime()} Uncaught exception in POST data handling: ${err}`)
+                            try {
+                                req.statusCode = 201; //Accepted
+                                let parsedBody = JSON.parse(body); //parse the transfer stringified json
+
+                                if (parsedBody.toString() <= 1) { //check if message length would be less than one char, assume bad actor
+                                    res.statusCode = 401; //Forbidden
+                                    req.connection.destroy();
+                                }
+                                else {
+                                    let formattedPost = { //Generate the additional data relevant to post
+                                        id: token(8),
+                                        content: parsedBody.data,
+                                        votes: { total: 0, voters: [] },
+                                        date: Date.now(),
+                                    };
+                                    actP.push(formattedPost);
+                                    res.end();
+                                }
+                            } catch (err) {
+                                req.statusCode = 500; //Internal server error
+                                console.log(`[WARN]${printTime()} Exception in POST data handling: ${err}`)
+                            }
+                        });
+
+                        break;
+                    }
+                    case 'vote': {
+                        //TODO: make sure user can undo votes and that votes cant be cast more than once
+
+                        if (actP.find(x => x.id === qs.decode(req.url, '?').id)) {
+                            vote(qs.decode(req.url, '?').v, qs.decode(req.url, '?').id)
+                                .then(() => {
+                                    res.end();
+                                })
+                                .catch((reject) => {
+                                    console.log(`[WARN]${printTime()} Rejected vote query. ${reject}`)
+                                    res.end();
+                                })
+
+                        } else {
+                            req.statusCode = 400; //Bad Request
+                            console.log(`[WARN]${printTime()} User requested to vote on non-existant post.`);
                         }
-                    });
-
-                    break;
+                        break;
+                    }
+                    default: {
+                        req.statusCode = 400; //Bad Request
+                        console.log(`[WARN]${printTime()} User requested invalid query. (If this request wasn't made through the client, ignore this.)`);
+                    }
                 }
-                case 'vote': {
-                    //TODO: make sure user can undo votes and that votes cant be cast more than once
-
-                    if (actP.find(x => x.id === querystring.decode(req.url, '?').id)) {
-                        vote(querystring.decode(req.url, '?').v, querystring.decode(req.url, '?').id)
-                            .then(() => {
-                                res.end();
-                            })
-                            .catch((reject) => {
-                                console.log(`[WARN]${printTime()} Rejected vote query. ${reject}`)
-                                res.end();
-                            })
-
-                    } else { req.statusCode = 403; console.log(`[WARN]${printTime()} User requested to vote on non-existant post.`); }
-                    break;
-                }
-                default: { req.statusCode = 403; console.log(`[WARN]${printTime()} User requested invalid query. (If this request wasn't made through the client, ignore this.)`); }
-            }
-        };
-    } else { res.statusCode = 400; res.end(); }
-
+            };
+            default : {
+                res.statusCode = 405; //Method Not Supported
+                res.end();
+            };
+        }
+    } else {
+        res.statusCode = 401; //Forbidden
+        res.end()
+    };
     // req.once('end', () => {
     //     req.connection.destroy(); //destroy connection if user requests it
     // })
@@ -206,5 +239,6 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(port, hostname, () => {
+    verbose && console.log(`[INFO]${printTime()} Verbose logging enabled!`)
     console.log(`[INFO]${printTime()} Server running at http://${hostname}:${port}/, ${credit}`);
 })
