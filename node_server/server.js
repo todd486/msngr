@@ -23,6 +23,7 @@ function token(length) { //generates a token of random characters of a specific 
 };
 
 //VARIABLES
+var stdin = process.openStdin(); //opens the console
 var actP = [];
 var actS = [];
 var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
@@ -48,7 +49,6 @@ const server = http.createServer((req, res) => {
         }));
     };
     function sessionCheck() {
-        //console.time();
         let success = false;
         function timeCheck(query) {
             switch (query) {
@@ -88,6 +88,7 @@ const server = http.createServer((req, res) => {
             return success;
         }
     };
+
     function vote(query, id) {
         function apply() {
             return new Promise((resolve, reject) => {
@@ -148,7 +149,7 @@ const server = http.createServer((req, res) => {
     if (sessionCheck()) {
         switch (req.method) {
             case 'GET': {
-                verbose && console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
+                // verbose && console.log(`[INFO]${printTime()} Received GET query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
                 switch (qs.decode(req.url, '?').q) { //using switch statement for future functionality
                     case 'posts': {
                         res.write(JSON.stringify(actP));
@@ -162,41 +163,43 @@ const server = http.createServer((req, res) => {
                 break;
             };
             case 'POST': {
-                verbose && console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
-                switch (qs.decode(req.url, '?').q) {
-                    case 'post': {
+                function handleData() {
+                    return new Promise((resolve, reject) => {
                         let body = ''; //create temporary value to store body
                         req.on('data', (chunk) => {
                             if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
                                 console.log(`[WARN]${printTime()} User sent chunk larger than 1MB, destroying connection!`)
                                 req.statusCode = 413; //Request too large
                                 req.connection.destroy();
+                                reject();
                             } else { //else add the chunk to body
                                 body += chunk;
                             }
-                            try {
-                                req.statusCode = 201; //Accepted
-                                let parsedBody = JSON.parse(body); //parse the transfer stringified json
-
-                                if (parsedBody.toString() <= 1) { //check if message length would be less than one char, assume bad actor
-                                    res.statusCode = 401; //Forbidden
-                                    req.connection.destroy();
-                                }
-                                else {
-                                    let formattedPost = { //Generate the additional data relevant to post
-                                        id: token(8),
-                                        content: parsedBody.data,
-                                        votes: { total: 0, voters: [] },
-                                        date: Date.now(),
-                                    };
-                                    actP.push(formattedPost);
-                                    res.end();
-                                }
-                            } catch (err) {
-                                req.statusCode = 500; //Internal server error
-                                console.log(`[WARN]${printTime()} Exception in POST data handling: ${err}`)
-                            }
+                            req.statusCode = 201; //Accepted
+                            let parsedBody = JSON.parse(body); //parse the transfer stringified json
+                            resolve(parsedBody.data);
                         });
+                    })
+                }
+
+                // verbose && console.log(`[INFO]${printTime()} Received POST query: ${JSON.stringify(qs.decode(req.url, '?'))} from ${req.socket.localAddress}`);
+                switch (qs.decode(req.url, '?').q) {
+                    case 'post': {
+                        handleData()
+                            .then((resolve) => {
+                                let formattedPost = { //Generate the additional data relevant to post
+                                    id: token(8),
+                                    content: resolve,
+                                    votes: { total: 0, voters: [] },
+                                    date: Date.now(),
+                                };
+                                verbose && console.log(formattedPost);
+                                actP.push(formattedPost);
+                            })
+                            .catch((reject) => {
+                                req.statusCode = 500; //Internal server error
+                                console.log(`[WARN]${printTime()} Exception in post data handling: ${reject}`)
+                            })
 
                         break;
                     }
@@ -219,6 +222,22 @@ const server = http.createServer((req, res) => {
                         }
                         break;
                     }
+                    case 'report': {
+                        if (actP.find(x => x.id === qs.decode(req.url, '?').id)) {
+                            handleData()
+                                .then((resolve) => {
+                                    console.log(`[REPORT]${printTime()} ${JSON.stringify(actP[actP.findIndex(x => x.id === qs.decode(req.url, '?').id)])} Reason: "${resolve}" `)
+                                })
+                                .catch((reject) => {
+                                    req.statusCode = 500; //Internal server error
+                                    console.log(`[WARN]${printTime()} Exception in report data handling: ${reject}`)
+                                })
+                        } else {
+                            req.statusCode = 400; //Bad Request
+                            console.log(`[WARN]${printTime()} User requested to report non-existant post.`);
+                        }
+                        break;
+                    }
                     default: {
                         req.statusCode = 400; //Bad Request
                         console.log(`[WARN]${printTime()} User requested invalid query. (If this request wasn't made through the client, ignore this.)`);
@@ -226,7 +245,7 @@ const server = http.createServer((req, res) => {
                 }
                 break;
             };
-            default : {
+            default: {
                 res.statusCode = 405; //Method Not Supported
                 res.end();
             };
@@ -235,6 +254,7 @@ const server = http.createServer((req, res) => {
         res.statusCode = 401; //Forbidden
         res.end()
     };
+    res.end()
     // req.once('end', () => {
     //     req.connection.destroy(); //destroy connection if user requests it
     // })
@@ -244,4 +264,12 @@ const server = http.createServer((req, res) => {
 server.listen(port, hostname, () => {
     verbose && console.log(`[INFO]${printTime()} Verbose logging enabled!`)
     console.log(`[INFO]${printTime()} Server running at http://${hostname}:${port}/, ${credit}`);
+
+    stdin.addListener('data', (command) => { //TODO be able to enter commands
+        //command is a buffer of raw bytes
+        const parsedCommand = command.toString()
+        if (parsedCommand.trim() === 'rm') {
+
+        }
+    })
 })

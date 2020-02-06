@@ -26,11 +26,29 @@ import axios from 'axios';
 function App() {
 	return (
 		<div className="App">
+			<Sidebar />
 			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
 			<MessageManager />
 		</div>
 	);
 }
+
+class Sidebar extends React.Component {
+	render() {
+		return (
+			<div className='sidebar'>
+				<div className='sidebar-title noselect'>
+					{/* <button className='smallbtn'><i className='fa fa-ellipsis-v' /></button> */}
+					<span>msngr</span>
+				</div>
+				<div className='sidebar-sub'>
+
+				</div>
+			</div>
+		)
+	}
+}
+
 //, {httpAgent: new http.Agent({ keepAlive: true })}
 async function fetchData() {
 	return new Promise((resolve, reject) => {
@@ -50,6 +68,7 @@ async function fetchData() {
 }
 
 async function sendData(query, data, id, action) {
+	console.log(query+' : '+data+' : '+id+' : '+action)
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
@@ -57,7 +76,7 @@ async function sendData(query, data, id, action) {
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
 							resolve();
-						} else { reject(); }
+						} else { reject(response); }
 					})
 					.catch(error => {
 						console.log(error)
@@ -71,7 +90,20 @@ async function sendData(query, data, id, action) {
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
 							resolve();
-						} else { reject(); }
+						} else { reject(response); }
+					})
+					.catch(error => {
+						reject(error)
+					})
+			})
+		}
+		case 'report': {
+			return new Promise((resolve, reject) => {
+				axios.post(`http://localhost:8080?q=${query}?id=${id}`, JSON.stringify({ data }))
+					.then(response => {
+						if (response.status === 200) { //check if a status of 200 was returned on POST
+							resolve();
+						} else { reject(response); }
 					})
 					.catch(error => {
 						reject(error)
@@ -93,8 +125,9 @@ class MessageManager extends React.Component {
 		this.state = {
 			posts: [],
 			messageContent: '',
-			debug: false,
-			settingsShown: false,
+			report_enable: false,
+			report_content: '',
+			report_id: null,
 			nopost: true,
 			disclaimer: true,
 		}
@@ -104,10 +137,6 @@ class MessageManager extends React.Component {
 	componentDidMount() {
 		this.timer = setInterval(() => this.refresh(), 1000) //set an interval to refresh the messages every second
 		this.fetchToComponent();
-
-		// this.setState({
-		//   posts: this.state.posts.sort((a, b) => b.votes - a.votes)
-		// })
 	}
 	componentWillUnmount() { clearInterval(this.timer) };
 
@@ -117,6 +146,9 @@ class MessageManager extends React.Component {
 				this.setState({
 					nopost: false, posts: resolve.data
 					//posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
+				})
+				this.setState({
+					posts: this.state.posts.sort((a, b) => b.date - a.date)
 				})
 			})
 			.catch(reject => {
@@ -154,19 +186,39 @@ class MessageManager extends React.Component {
 		return (
 			<div className='main'>
 
-				{false && <div className='options'>
-					<span className='logo noselect'>msngr</span>
-					<button className='btn' onClick={(event) => {
-						if (this.state.settingsShown === false) { this.setState({ settingsShown: true }) }
-						else { this.setState({ settingsShown: false }) }
-					}}>
-						<i className='fa fa-cog' />
-					</button>
-				</div>}
-				{this.state.settingsShown && <div className='options-menu'>
-					<h2>Options Menu</h2>
-					<div>Max loaded posts</div>
-					<div>Show debug info</div>
+				{this.state.report_enable && <div className='report noselect'>
+					<div className='report-title'>Report post?</div>
+					<p>Please provide a reason for your report. (Max 400 characters)</p>
+					<textarea
+						maxLength={400} autoFocus={true}
+						onChange={(event) => {
+							this.setState({
+								report_content: event.target.value
+							});
+						}}
+						
+					/>
+					<div className='report-footer'>
+						<span>post id: {this.state.report_id}</span>
+						<button className='btn' 
+						value={this.state.report_content}
+						onClick={() => {
+							this.setState({
+								report_enable: false
+							})
+							
+							sendData('report', this.state.report_content, this.state.report_id, undefined)
+							.then(() => {
+								this.setState({
+									report_content: ''
+								})
+							})
+							.catch ((reject) => {
+								console.log(reject)
+							})
+						}}
+						>Send report</button>
+					</div>
 				</div>}
 
 				<div className='message-container'>
@@ -175,7 +227,15 @@ class MessageManager extends React.Component {
 
 					{this.state.posts.map((data, index) => (
 						<div className='message' key={index} value={data.postID}>
-							<div className='content'>{data.content}</div>
+							<div className='content'>{data.content}<button
+								title='Report this post?'
+								className='smallbtn reportbtn'
+								onClick={() => {
+									const id = data.id
+									this.setState({ report_id: id, report_enable: true })
+								}}
+							>
+								<i className='fa fa-flag' /></button></div>
 							<div className='sub-content'>
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
 								<div className='vote'>
@@ -209,17 +269,16 @@ class MessageManager extends React.Component {
 							onChange={(event) => {
 								this.setState({
 									messageContent: event.target.value,
-
 								});
 							}}
 							onKeyDown={this.onEnterPress} />
 
-						<button className='btn' id="send" onClick={this.handleClick}><i className="fa fa-paper-plane" /></button>
+						<button className='btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
 						{false && <canvas className='limit noselect' width={20} height={20}></canvas>}
 					</div>
-					{this.state.disclaimer && <p className='dis'>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight.
-					<i className='fa fa-close' onClick={() => {this.setState({disclaimer: false})}} /></p>}
-					
+					{this.state.disclaimer && <div className='dis'><p>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (CET). </p>
+						<button className='smallbtn'><i className='fa fa-close' onClick={() => { this.setState({ disclaimer: false }) }} /></button></div>}
+
 				</div>
 			</div>
 		)
