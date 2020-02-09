@@ -27,14 +27,18 @@ textarea {
 }
 
 .App {
+  
+  
   text-align: center;
   display: flex;
   height: 100vh;
   width: 100vw;
   justify-content: center;
-  /* overflow: hidden; */
-  /* background-color: #5ebcff; */
+  overflow: hidden;
+  background-color: #5ebcff;
 }
+
+
 
 /* .loading {
   position: absolute;
@@ -57,8 +61,8 @@ textarea {
 
 
 .main {
-  background-color: #fff;
   /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
+  
   border-radius: 8px 0 8px 8px;
   border: 1px solid #d3d3d3;
   display: inline-flex;
@@ -69,7 +73,7 @@ textarea {
   flex: 1 1;
 }
 
-@media only screen and (max-width: 900px) {
+@media only screen and (max-width: 700px) {
   .main {
     width: 90%;
   }
@@ -120,18 +124,16 @@ textarea {
 .sidebar {
   display: flex;
   flex-direction: column;
-  color: #000;
   padding: 2vh;
   min-width: 30%;
   text-align: left;
-  background-color: #fff;
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
 }
 
 .sidebar-title {
   display: flex;
   width: 100%;
-  font-size: 1.6em;
+  font-size: 1.2em;
 }
 
 .sidebar-title > span {
@@ -147,7 +149,7 @@ textarea {
   padding: 0 0.5em;
   background-color: rgba(0,0,0,0);
   cursor: pointer;
-  font-size: 1em;
+  font-size: 1.2em;
 }
 
 .sidebar-sub {
@@ -159,14 +161,13 @@ textarea {
   display: flex;
 }
 
-.sidebar-footer > span > a > i{
-  margin: 1vh; 
-}
 
-a {
-  color: #000;
+.sidebar-enable {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.5em 0;
 }
-
 
 /* .disclaimer {
   background-color: white;
@@ -220,7 +221,6 @@ a {
   padding: 0.8vh;
   border: none;
   background-color: #5ebcff;
-  color: white;
   font-size: 2vh;
   border-radius: 6px;
   cursor: pointer;
@@ -297,10 +297,10 @@ a {
 
 .vote-btn {
   padding: 1vh;
-  color: #5ebcff;
+  color: #555;
 }
 .vote-btn:hover {
-  color: #555;
+  /* color: #5ebcff; */
 } 
 
 .chatstuffs {
@@ -324,6 +324,7 @@ a {
 }
 
 .send {
+  color: #fff;
   align-self: flex-end;
   height: 10vh;
   font-size: 3vh;

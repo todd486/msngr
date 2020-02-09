@@ -23,9 +23,11 @@ import axios from 'axios';
 //   agent: keepaliveAgent,
 // };
 
+
+
 function App() {
 	return (
-		<div className="App">
+		<div className="App" >
 			<Sidebar />
 			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
 			<MessageManager />
@@ -33,33 +35,68 @@ function App() {
 	);
 }
 
+let mode = true
+function Theme(mode) {
+	const out = mode ? false : true;
+	return (
+		out ? ('#1a1a1a') : ('#fff')
+	)
+}
+
 class Sidebar extends React.Component {
 	constructor(props) {
 		super(props);
-		this.state = { show: true }
+		this.state = {
+			show: true,
+			contact: false
+		}
 	}
 
 	render() {
-		return this.state.show ? (
-			<div className='sidebar'>
-				<div className='sidebar-title noselect'>
+		return (
+			(window.innerWidth > 600) ? ( //check if the client width is greater than 600, if so: assume mobile
+				this.state.show ? (
+					<div className='sidebar' style={{ backgroundColor: Theme(mode), color: Theme(!mode) }}>
+						<div className='sidebar-title noselect'>
 
-					<span>msngr</span>
-					<button aria-label='Close Sidebar' className='smallbtn' onClick={() => {
-						this.setState({
-							show: false
-						})
-					}}><i className='fa fa-close' /></button>
-				</div>
-				<div className='sidebar-sub'>
+							<span>msngr</span>
+							<button aria-label='Hide Sidebar' title='Hide Sidebar' className='smallbtn' onClick={() => {
+								this.setState({
+									show: false
+								})
+							}}><i className='fa fa-chevron-left' /></button>
+						</div>
+						<div className='sidebar-sub'>
 
-				</div>
-				<div className='sidebar-footer'>
-					<span><a href='http://testing.com/'>Contact Me<i className='fa fa-envelope' /></a></span>
-					<span><a href='http://testing.com/'>About This<i className='fa fa-question' /></a></span>
-				</div>
-			</div>
-		) : false
+						</div>
+						<div className='sidebar-footer'>
+							<button
+								aria-label={mode ? ('Switch to Dark Mode?') : ('Switch to Light Mode?')}
+								title={mode ? ('Switch to Dark Mode?') : ('Switch to Light Mode?')}
+								className='smallbtn'
+								onClick={() => {
+									mode = !mode
+
+								}}
+							><i className='fa fa-moon-o' /></button>
+							<button className='smallbtn' onClick={() => {
+								this.setState({ contact: !this.state.contact })
+							}}>Contact Me</button>
+							{this.state.contact ? (<span><span className='noselect'>Discord: </span>whii#5851</span>) : false}
+						</div>
+					</div>
+				) : (
+						<div className='sidebar-enable'>
+							<button aria-label='Show Sidebar' title='Show Sidebar' className='smallbtn' onClick={() =>
+								(this.setState({
+									show: true
+								}))
+
+							}><i className='fa fa-chevron-right' /></button>
+						</div>
+					)
+			) : false
+		)
 	}
 }
 
@@ -198,7 +235,7 @@ class MessageManager extends React.Component {
 
 	render() {
 		return (
-			<div className='main'>
+			<div className='main' style={{ backgroundColor: Theme(mode), color: Theme(!mode) }}>
 
 				{this.state.report_enable && <div className='report noselect'>
 					<div className='report-title'>
@@ -245,10 +282,11 @@ class MessageManager extends React.Component {
 				</div>}
 
 				<div className='message-container'>
+					<div className='settings'></div>
 
 					{this.state.nopost && <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div>}
 
-					{this.state.posts.map((data, index) => (
+					{this.state.posts.map((data, index) => ( /* use async await */
 						<div className='message' key={index} value={data.postID}>
 							<div className='content'>{data.content.toString() /*Render as toString, just to ensure xss is unlikely*/}<button
 								title='Report this post?'
@@ -264,15 +302,26 @@ class MessageManager extends React.Component {
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
 								<div className='vote'>
 									<button aria-label='Upvote Post' className='smallbtn vote-btn noselect'
+										value={false}
 										onClick={(upvoteevent) => {
-
+											upvoteevent.currentTarget.value = !upvoteevent.currentTarget.value
+											if (upvoteevent.currentTarget.value) {
+												upvoteevent.currentTarget.style.color = '#5ebcff'
+											} else {
+												upvoteevent.currentTarget.style.color = '#555'
+											}
 											sendData('vote', null, data.id, 'upvote');
 											this.fetchToComponent(); //refresh
 										}}><i className='fa fa-chevron-circle-up' /></button>
 									<span className='vote-amount noselect'>{data.votes.total}</span>
 									<button aria-label='Downvote Post' className='smallbtn vote-btn noselect'
 										onClick={(downvoteevent) => {
-
+											downvoteevent.currentTarget.value = !downvoteevent.currentTarget.value
+											if (downvoteevent.currentTarget.value) {
+												downvoteevent.currentTarget.style.color = '#5ebcff'
+											} else {
+												downvoteevent.currentTarget.style.color = '#555'
+											}
 											sendData('vote', null, data.id, 'downvote');
 											this.fetchToComponent(); //refresh
 										}}><i className='fa fa-chevron-circle-down' /></button>
