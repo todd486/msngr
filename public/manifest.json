@@ -8,8 +8,11 @@
       "type": "image/x-icon"
     },
     {
+      
+    },
+    {
       "src": "msngr_logo.svg",
-      "sizes": "64x64",
+      "sizes": "512x512 256x256 128x128 64x64",
       "type": "image/svg+xml"
     }
   ],

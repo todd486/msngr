@@ -2,7 +2,16 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Varela Round', sans-serif;
+  font-family: 'Varela Round';
+}
+
+@font-face {
+  font-family: 'Varela Round';
+  src: local('Varela Round Regular'), local('VarelaRound-Regular'), url(https://fonts.gstatic.com/s/varelaround/v12/w8gdH283Tvk__Lua32TysjIfp8uPLdshZg.woff2) format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 html {
@@ -19,9 +28,9 @@ textarea {
 
 .App {
   text-align: center;
-  display: grid;
-  grid-template-columns: 30% 70%;
-  /* height: 100vh; */
+  display: flex;
+  height: 100vh;
+  width: 100vw;
   justify-content: center;
   /* overflow: hidden; */
   /* background-color: #5ebcff; */
@@ -52,17 +61,15 @@ textarea {
   /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
   border-radius: 8px 0 8px 8px;
   border: 1px solid #d3d3d3;
-  height: 100vh;
   display: inline-flex;
   flex-direction: column;
+  max-width: 70%;
   z-index: 1;
-  margin: 0 5vw;
+  margin: 1vh 3vh;
+  flex: 1 1;
 }
 
 @media only screen and (max-width: 900px) {
-  .App {
-    display: flex;
-  }
   .main {
     width: 90%;
   }
@@ -84,8 +91,13 @@ textarea {
 }
 
 .report-title {
+  display: flex;
+  flex-direction: row;
   font-size: 1.4em;
   margin: 1vh;
+}
+.report-title > span {
+  flex: 1 1;
 }
 
 .report > p {
@@ -106,23 +118,27 @@ textarea {
 }
 
 .sidebar {
-  height: 100vh;
-  color: white;
+  display: flex;
+  flex-direction: column;
+  color: #000;
   padding: 2vh;
+  min-width: 30%;
   text-align: left;
-  background-color: white;
+  background-color: #fff;
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
 }
 
 .sidebar-title {
-  display: inline-flex;
+  display: flex;
   width: 100%;
-  color: #555;
   font-size: 1.6em;
 }
 
-.sidebar-title > button {
-  margin-right: 0.5em;
+.sidebar-title > span {
+  flex: 1 1;
+}
+.sidebar-footer > span {
+  flex: 1 1;
 }
 
 .smallbtn {
@@ -136,7 +152,21 @@ textarea {
 
 .sidebar-sub {
   display: flex;
+  flex: 1 1;
 }
+
+.sidebar-footer {
+  display: flex;
+}
+
+.sidebar-footer > span > a > i{
+  margin: 1vh; 
+}
+
+a {
+  color: #000;
+}
+
 
 /* .disclaimer {
   background-color: white;
@@ -220,7 +250,7 @@ textarea {
 } */
 
 .nopost {
-  color: gray;
+  color: #555;
 }
 
 .message {
@@ -250,7 +280,7 @@ textarea {
 .sub-content {
   display: flex;
   margin-top: 1vh;
-  color: #5ebcff;
+  color: #555;
 }
 
 .date {
@@ -267,7 +297,6 @@ textarea {
 
 .vote-btn {
   padding: 1vh;
-  cursor: pointer;
   color: #5ebcff;
 }
 .vote-btn:hover {
@@ -278,19 +307,17 @@ textarea {
   border-top: 1px solid #d3d3d3;
   align-self: flex-end;
   width: 100%;
-  padding: 2vh;
+  padding: 3vh 2vh;
   display: inline-block;
   align-content: center;
   width: 100%;
-  font-size: 2vh;
+  font-size: 1em;
 }
 
 .userArea {
   display: flex;
   width: 100%;
 }
-
-
 
 .userInput {
   margin-right: 1vh;
@@ -300,6 +327,7 @@ textarea {
   align-self: flex-end;
   height: 10vh;
   font-size: 3vh;
+  padding: 2vh;
 }
 
 /* .limit {
@@ -321,7 +349,7 @@ textarea {
 .dis {
   display: inline-flex;
   margin-top: 1vh;
-  font-size: 0.6em;
+  font-size: 0.8em;
   color: #555;
 }
 .dis > .smallbtn {

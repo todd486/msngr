@@ -265,11 +265,22 @@ server.listen(port, hostname, () => {
     verbose && console.log(`[INFO]${printTime()} Verbose logging enabled!`)
     console.log(`[INFO]${printTime()} Server running at http://${hostname}:${port}/, ${credit}`);
 
+    //COMMAND INTERPRETER
     stdin.addListener('data', (command) => { //TODO be able to enter commands
         //command is a buffer of raw bytes
-        const parsedCommand = command.toString()
-        if (parsedCommand.trim() === 'rm') {
-
+        let buffer = command.toString().replace(/\r?\n|\r/, '').split(' ')
+        switch (buffer[0]) {
+            case 'rmp' : {
+                if (actP[actP.findIndex(x => x.id === buffer[1])]) {
+                    actP.splice(actP.findIndex(x => x.id === buffer[1]) , 1)
+                } else {
+                    console.log('Invalid Post')
+                }
+                break;
+            }
+            default : {
+                console.log('Invalid Command')
+            }
         }
     })
 })

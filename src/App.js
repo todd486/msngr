@@ -34,18 +34,32 @@ function App() {
 }
 
 class Sidebar extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = { show: true }
+	}
+
 	render() {
-		return (
+		return this.state.show ? (
 			<div className='sidebar'>
 				<div className='sidebar-title noselect'>
-					{/* <button className='smallbtn'><i className='fa fa-ellipsis-v' /></button> */}
+
 					<span>msngr</span>
+					<button aria-label='Close Sidebar' className='smallbtn' onClick={() => {
+						this.setState({
+							show: false
+						})
+					}}><i className='fa fa-close' /></button>
 				</div>
 				<div className='sidebar-sub'>
 
 				</div>
+				<div className='sidebar-footer'>
+					<span><a href='http://testing.com/'>Contact Me<i className='fa fa-envelope' /></a></span>
+					<span><a href='http://testing.com/'>About This<i className='fa fa-question' /></a></span>
+				</div>
 			</div>
-		)
+		) : false
 	}
 }
 
@@ -68,7 +82,7 @@ async function fetchData() {
 }
 
 async function sendData(query, data, id, action) {
-	console.log(query+' : '+data+' : '+id+' : '+action)
+	console.log(query + ' : ' + data + ' : ' + id + ' : ' + action)
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
@@ -187,36 +201,45 @@ class MessageManager extends React.Component {
 			<div className='main'>
 
 				{this.state.report_enable && <div className='report noselect'>
-					<div className='report-title'>Report post?</div>
+					<div className='report-title'>
+						<span>Report post?</span>
+						<button aria-label='Close Report Dialog' className='smallbtn' onClick={() => {
+							this.setState({
+								report_enable: false
+							})
+						}}><i className='fa fa-close' /></button>
+					</div>
+
 					<p>Please provide a reason for your report. (Max 400 characters)</p>
 					<textarea
+						aria-label='Report Dialog Textbox'
 						maxLength={400} autoFocus={true}
 						onChange={(event) => {
 							this.setState({
 								report_content: event.target.value
 							});
 						}}
-						
+
 					/>
 					<div className='report-footer'>
 						<span>post id: {this.state.report_id}</span>
-						<button className='btn' 
-						value={this.state.report_content}
-						onClick={() => {
-							this.setState({
-								report_enable: false
-							})
-							
-							sendData('report', this.state.report_content, this.state.report_id, undefined)
-							.then(() => {
+						<button className='btn'
+							value={this.state.report_content}
+							onClick={() => {
 								this.setState({
-									report_content: ''
+									report_enable: false
 								})
-							})
-							.catch ((reject) => {
-								console.log(reject)
-							})
-						}}
+
+								sendData('report', this.state.report_content, this.state.report_id, undefined)
+									.then(() => {
+										this.setState({
+											report_content: ''
+										})
+									})
+									.catch((reject) => {
+										console.log(reject)
+									})
+							}}
 						>Send report</button>
 					</div>
 				</div>}
@@ -227,8 +250,9 @@ class MessageManager extends React.Component {
 
 					{this.state.posts.map((data, index) => (
 						<div className='message' key={index} value={data.postID}>
-							<div className='content'>{data.content}<button
+							<div className='content'>{data.content.toString() /*Render as toString, just to ensure xss is unlikely*/}<button
 								title='Report this post?'
+								aria-label='Report Post'
 								className='smallbtn reportbtn'
 								onClick={() => {
 									const id = data.id
@@ -239,23 +263,19 @@ class MessageManager extends React.Component {
 							<div className='sub-content'>
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
 								<div className='vote'>
-									<span className='vote-btn upvote noselect'>
-										<i className='fa fa-chevron-circle-up'
-											onClick={(upvoteevent) => {
+									<button aria-label='Upvote Post' className='smallbtn vote-btn noselect'
+										onClick={(upvoteevent) => {
 
-												sendData('vote', null, data.id, 'upvote');
-												this.fetchToComponent(); //refresh
-											}}
-										/></span>
+											sendData('vote', null, data.id, 'upvote');
+											this.fetchToComponent(); //refresh
+										}}><i className='fa fa-chevron-circle-up' /></button>
 									<span className='vote-amount noselect'>{data.votes.total}</span>
-									<span className='vote-btn downvote noselect'>
-										<i className='fa fa-chevron-circle-down'
-											onClick={(downvoteevent) => {
+									<button aria-label='Downvote Post' className='smallbtn vote-btn noselect'
+										onClick={(downvoteevent) => {
 
-												sendData('vote', null, data.id, 'downvote');
-												this.fetchToComponent(); //refresh
-											}}
-										/></span>
+											sendData('vote', null, data.id, 'downvote');
+											this.fetchToComponent(); //refresh
+										}}><i className='fa fa-chevron-circle-down' /></button>
 								</div>
 							</div>
 						</div>
@@ -263,9 +283,10 @@ class MessageManager extends React.Component {
 				</div>
 
 				<div className="chatstuffs" >
-					<div className='userArea'>
-						<textarea className="userInput" ref="userInputArea" placeholder="Share something!"
+					<div className='userArea text-message'>
+						<textarea className="userInput noselect" ref="userInputArea" placeholder="Share something!"
 							maxLength={this.var.maxLength} value={this.state.messageContent} autoFocus={true}
+							aria-label='Message textbox'
 							onChange={(event) => {
 								this.setState({
 									messageContent: event.target.value,
@@ -273,11 +294,11 @@ class MessageManager extends React.Component {
 							}}
 							onKeyDown={this.onEnterPress} />
 
-						<button className='btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
+						<button aria-label='Send Message' className='send-message btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
 						{false && <canvas className='limit noselect' width={20} height={20}></canvas>}
 					</div>
 					{this.state.disclaimer && <div className='dis'><p>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (CET). </p>
-						<button className='smallbtn'><i className='fa fa-close' onClick={() => { this.setState({ disclaimer: false }) }} /></button></div>}
+						<button aria-label='Close Disclaimer' className='smallbtn'><i className='fa fa-close' onClick={() => { this.setState({ disclaimer: false }) }} /></button></div>}
 
 				</div>
 			</div>
