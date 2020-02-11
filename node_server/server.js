@@ -17,7 +17,7 @@ function token(length) { //generates a token of random characters of a specific 
 
 //VARIABLES
 var stdin = process.openStdin(); //opens the console
-var actP = [];
+var actP = [{ id: token(8), content: 'Sample Text', votes: { total: 12300, voters: [] }, date: Date.now(), pinned: true, }];
 var actS = [];
 var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
 
@@ -42,6 +42,7 @@ const server = http.createServer((req, res) => {
             }
         }));
     };
+
     function sessionCheck() {
         let success = false;
         function timeCheck(query) {
@@ -186,6 +187,7 @@ const server = http.createServer((req, res) => {
                                     content: resolve,
                                     votes: { total: 0, voters: [] },
                                     date: Date.now(),
+                                    pinned: false,
                                 };
                                 verbose && console.log(formattedPost);
                                 actP.push(formattedPost);
@@ -264,24 +266,41 @@ server.listen(port, hostname, () => {
         //command is a buffer of raw bytes
         let buffer = command.toString().replace(/\r?\n|\r/, '').split(' ') //split them into individual strings as an array
 
-        if (actP[actP.findIndex(x => x.id === buffer[1])]) { //check if post id given exists
-            switch (buffer[0]) {
-                case 'rmp' : { //remove post
-                    actP.splice(actP[actP.findIndex(x => x.id === buffer[1])] , 1)
-                    break;
+        function exists(id) {
+            return new Promise((resolve, reject) => {
+                try {
+                    let foundIndex = actP.findIndex(x => x.id === id)
+                    resolve(foundIndex);
+                } catch (err) {
+                    reject('Failed to find post')
                 }
-                case 'mdp' : { //modify post
-    
-                }
-                case 'pin' : { //pin post
-    
-                }
-                default : {
-                    console.log('Invalid Command')
-                }
-            }
-        } else {
-            console.log('Invalid Post ID')
+            })
         }
+
+        switch (buffer[0]) { //BUG: rmp removes the post preceeding the chosen post, if it's pinned?
+            case 'rmp': { //remove post
+                exists(buffer[1])
+                    .then(index => { actP.splice(actP[index], 1) })
+                    .catch(err => { console.log(err) })
+                break;
+            }
+            case 'mdp': { //modify post
+
+            }
+            case 'pin': { //pin post
+                exists(buffer[1])
+                    .then(index => { actP[index].pinned = true })
+                    .catch(err => { console.log(err) })
+                break;
+            }
+            case 'ban': { //ban ip adress
+
+            }
+            default: {
+                console.log('Invalid Command')
+            }
+        }
+
+
     })
 })

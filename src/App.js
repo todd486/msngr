@@ -5,11 +5,20 @@ import axios from 'axios';
 function App() {
 	return (
 		<div className="App" >
+			<header></header>
+
 			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
 			<MessageManager />
 
-			<div className='contact' title='Contact Me!'>
-				<a className='smallbtn' target='_blank' rel="noopener noreferrer" href='https://google.com'><i className='fa fa-question-circle'/></a>
+			<div className='contact' >
+				<a
+					aria-label='Contact Me.'
+					title='Contact Me!'
+					className='smallbtn'
+					target='_blank'
+					rel="noopener noreferrer"
+					href='https://google.com'>
+					<i className='fa fa-question-circle' /></a>
 			</div>
 		</div>
 	);
@@ -91,7 +100,8 @@ class MessageManager extends React.Component {
 			report: false,
 			posts: [],
 			nopost: true,
-			error: {enable: true, info: 'Sample Error Text!'}
+			debug: true,
+			error: { enable: false, info: 'Sample Error Text!' }
 		}
 		//maybe let user configure how many posts to allow at once, since it may decrease performance
 	}
@@ -105,12 +115,10 @@ class MessageManager extends React.Component {
 	async fetchToComponent() {
 		await fetchData() //promise based fetching
 			.then(resolve => {
-				this.setState({
-					nopost: false, posts: resolve.data
+				this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
+					nopost: false, posts: resolve.data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
+					//TODO:split sorting into separate function, which .map will await before rendering
 					//posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
-				})
-				this.setState({
-					posts: this.state.posts.sort((a, b) => b.date - a.date)
 				})
 			})
 			.catch(reject => {
@@ -121,23 +129,27 @@ class MessageManager extends React.Component {
 
 	refresh() { this.fetchToComponent(); }
 
+	round(x) { //round value to nearest thousand, add k suffix
+		return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x)
+	}
+
 	//callbacks from children
 	reportCallback() { this.setState({ report: false }) }
-	messageCallback(state) { 
+	messageCallback(state) {
 		switch (state) {
-			case 0 : { //state 0 is success
+			case 0: { //state 0 is success
 				this.fetchToComponent(); //fetch new messages
 				break;
 			}
-			case 1 : { //generic send error
-				this.setState({error: {enable: true, info: 'Message failed to send! Try again later...'}})
+			case 1: { //generic send error
+				this.setState({ error: { enable: true, info: 'Message failed to send! Try again later...' } })
 				break;
 			}
-			case 2 : { //message too short
-				this.setState({error: {enable: true, info: 'Message too short to send!'}})
+			case 2: { //message too short
+				this.setState({ error: { enable: true, info: 'Message too short to send!' } })
 				break;
 			}
-			default : { //unknown error
+			default: { //unknown error
 				console.log('Unknown error state returned from messageCallback!')
 			}
 		}
@@ -145,50 +157,46 @@ class MessageManager extends React.Component {
 
 	/* mapping the data with a key of {index}, display data.content */
 
-	render() {
+	render() { //TODO: implement workers
 		return (
-			<div className='main'>
-
-				{this.state.error.enable ? <div className='error noselect'>
+			<main>
+				{this.state.error.enable ? <div className='error noselect' aria-live='assertive'>
 					<button className='smallbtn' aria-label='Close Error Message' onClick={() => {
-						this.setState({error: {enable: false, info: ''}})
-					}}><i className='fa fa-close'/></button><div>{this.state.error.info}</div>
+						this.setState({ error: { enable: false, info: '' } })
+					}}><i className='fa fa-close' /></button><div>{this.state.error.info}</div>
 				</div> : false}
 
 				{this.state.report ? <Report id={this.state.reportid} callback={this.reportCallback} /> : false}
 
 				<div className='message-container'>
-
 					{this.state.nopost ? <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div> : false}
 
-					{this.state.posts.map((data, index) => ( /* TODO: use async await */
-						<div className='message' key={index} value={data.postID}>
-							<div className='content'>{data.content.toString() /*Render as toString, just to ensure xss is unlikely*/}<button
-								title='Report this post?' aria-label='Report Post'
-								className='smallbtn reportbtn'
-								onClick={() => { this.setState({ report: true, reportid: data.id }) }}>
-								<i className='fa fa-flag' /></button></div>
+					{this.state.posts.map((data, index) => ( //TODO: filter out vulgarity if user requests it
+						<div aria-live='polite' className={'message'} key={index} value={data.postID}>
+							<div className='content'>
+								{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}{data.content.toString()}
+								{data.pinned ? false : //if a post is pinned it shouldn't be reportable
+									<button
+										title='Report this post?' aria-label='Report Post'
+										className='smallbtn reportbtn'
+										onClick={() => { this.setState({ report: true, reportid: data.id }) }}>
+										<i className='fa fa-flag' /></button>}</div>
 							<div className='sub-content'>
-								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
+								{this.state.debug ? <span className='date'>{data.id}</span> : false}
+								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
 								<div className='vote'>
 									<button aria-label='Upvote Post' className='smallbtn vote-btn upvote-active noselect'
 										onClick={(upvoteevent) => {
 											// upvoteevent.currentTarget.value
-											sendData('vote', null, data.id, 'upvote');
-											this.fetchToComponent(); //refresh
+											sendData('vote', null, data.id, 'upvote')
+											.then(() => {this.fetchToComponent();}) //refresh
 										}}><i className='fa fa-chevron-circle-up' /></button>
-
-									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{
-										Math.abs() > 999 ? //round value to nearest thousand, add k suffix
-										Math.sign(data.votes.total)*((Math.abs(data.votes.total)/1000).toFixed(1)) + 'k' : 
-										Math.sign(data.votes.total)*Math.abs(data.votes.total)
-									}</span>
-
+									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{this.round(data.votes.total)}</span>
 									<button aria-label='Downvote Post' className='smallbtn vote-btn downvote-active noselect'
 										onClick={(downvoteevent) => {
 											// downvoteevent.currentTarget.value
-											sendData('vote', null, data.id, 'downvote');
-											this.fetchToComponent(); //refresh
+											sendData('vote', null, data.id, 'downvote')
+											.then(() => {this.fetchToComponent();}) //refresh
 										}}><i className='fa fa-chevron-circle-down' /></button>
 								</div>
 							</div>
@@ -198,25 +206,59 @@ class MessageManager extends React.Component {
 
 				<UserText callback={this.messageCallback} />
 
-			</div>
+			</main>
 		)
 	}
 }
 
-//TODO: let user customize
-// class Settings extends React.Component {
-// 	constructor(props) {
-// 		super(props);
-// 	}
+//TODO: let user customize types of display to suit their needs:
+//compact mode, dark mode / themes in general (save in cookie)
 
-// 	render() {
-// 		return (
-// 			<div className='settings'>
+// eslint-disable-next-line
+class Settings extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			theme: { //TODO: let user push own themes into state
+				default_light: {
+					background1: '#af70e3',
+					background2: '#ffffff',
+					maintext: '#000000',
+					subtext: '#555555',
+					aux1: '#d3d3d3', //spacers and inactive objects
+					aux2: '#5ebcff', //upvote
+					aux3: '#af70e3', //downvote
+				},
+				default_dark: {
+					background1: '#555555',
+					background2: '',
+					text: '#ffffff',
+					subtext: '#a5a5a5',
+					aux1: '',
+					aux2: '',
+					aux3: '',
+				},
+			},
+			display: {
+				compact: false,
+				vulgarity: true,
+			},
+			sorting: {
+				popular: true,
+				controversial: false,
+				new: false,
+			}
+		}
+	}
 
-// 			</div>
-// 		)
-// 	}
-// }
+	render() {
+		return (
+			<div className='settings'>
+
+			</div>
+		)
+	}
+}
 
 class UserText extends React.Component {
 	constructor(props) {
@@ -231,6 +273,8 @@ class UserText extends React.Component {
 		}
 	}
 
+	//TODO: 
+
 	async handleSend() {
 		const content = this.state.content;
 
@@ -241,8 +285,8 @@ class UserText extends React.Component {
 					this.setState({ content: '' });
 					this.props.callback(0);
 				})
-				.catch(reject => { 
-					console.log(reject); 
+				.catch(reject => {
+					console.log(reject);
 					this.props.callback(1);
 				})
 		} else { //show error
@@ -252,13 +296,13 @@ class UserText extends React.Component {
 
 	onEnterPress = (e) => { if (e.keyCode === 13 && e.shiftKey === false) { e.preventDefault(); this.handleSend(); } }
 
-	render() {
+	render() { //might restructure to be a form for accessibility
 		return (
 			<div className="chatstuffs" >
 				<div className='userArea'>
 					<textarea className="userInput noselect" placeholder="Share something!"
 						maxLength={this.var.maxLength} value={this.state.content} autoFocus={true}
-						aria-label='Message textbox'
+						aria-label='Message textbox. Press enter to send a message.'
 						onChange={(event) => { this.setState({ content: event.target.value, }); }}
 						onKeyDown={this.onEnterPress} />
 
@@ -266,10 +310,10 @@ class UserText extends React.Component {
 					{false && <canvas className='limit noselect' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
 				</div>
 				{this.state.disclaimer ?
-					<div className='dis'>
-						<p>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (CET). </p>
+					<footer className='disclaimer'>
+						<span>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (GMT). </span>
 						<button aria-label='Close Disclaimer' className='smallbtn' onClick={() => { this.setState({ disclaimer: false }) }}>
-							<i className='fa fa-close' /></button></div> : false}
+							<i className='fa fa-close' /></button></footer> : false}
 			</div>
 		)
 	}
@@ -284,6 +328,7 @@ class Report extends React.Component {
 	}
 
 	close() { this.props.callback(); }
+	componentWillUnmount() { this.setState({ content: '' }); }
 
 	render() {
 		return (
@@ -306,9 +351,7 @@ class Report extends React.Component {
 						value={this.state.content}
 						onClick={() => {
 							sendData('report', this.state.content, this.props.id)
-								.then(() => { 
-									this.setState({ content: '' }); 
-									this.close(); })
+								.then(() => { this.close(); })
 								.catch((reject) => { console.log(reject) })
 						}}
 					>Send report</button>

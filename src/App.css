@@ -2,7 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Varela Round';
+  font-family: 'Varela Round', Helvetica, sans-serif;
 }
 
 @font-face {
@@ -22,7 +22,7 @@ textarea {
   resize: none;
   width: 100%;
   font-size: 1em;
-  padding: 1vh;
+  padding: 0.8em;
 }
 
 a {
@@ -33,8 +33,11 @@ a {
   position: fixed;
   bottom: 0;
   left: 0;
-  margin: 0.5em 0;
   color: #fff;
+  border-radius: 0 6px 0 0;
+  z-index: 2;
+  background-color: #5ebcff;
+  box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
 }
 
 .App {
@@ -47,13 +50,14 @@ a {
   background-color: #af70e3;
 }
 
-/* .loading {
+.loading {
   position: absolute;
   display: flex;
   background-color: rgba(255, 255, 255, 0.7);
   height: 100%;
   width: 100%;
   justify-content: center;
+  z-index: 5;
 }
 
 .loadingicon {
@@ -64,21 +68,60 @@ a {
   stroke-width: 6;
   stroke-dasharray: 250;
   stroke-dashoffset: 1000;
-} */
+}
 
 
-.main {
+main {
   /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
   background-color: #fff;
-  overflow: auto;
   border-radius: 8px 0 8px 8px;
   border: 1px solid #d3d3d3;
   display: inline-flex;
   flex-direction: column;
   max-width: 70%;
   z-index: 1;
-  margin: 1vh 3vh;
+  margin: 1em 1.5em;
   flex: 1 1;
+}
+
+.report-container {
+  display: inline;
+}
+.report {
+  display: flex;
+  flex-direction: column;
+  position: static;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  background-color: #fff;
+  width: 100%;
+  min-height: 50%;
+  box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
+  padding: 1em;
+  border-radius: 6px;
+}
+.report > textarea {
+  height: 100%;
+  margin: 1vh 0;
+}
+.report-title {
+  display: flex;
+  flex-direction: row;
+  font-size: 1.4em;
+  margin: 1vh;
+}
+.report-title > span {
+  flex: 1 1;
+}
+.report-footer {
+  text-align: end;
+}
+.report-footer > span {
+  color: #d3d3d3;
+  margin-right: 1vh;
+}
+.report-footer > button {
+  color: #fff;
 }
 
 .smallbtn {
@@ -105,7 +148,7 @@ a {
 .message-container {
   border-radius: 6px;
   overflow-y: scroll;
-  padding: 2vh;
+  padding: 1em;
   height: 100%;
 }
 
@@ -114,14 +157,20 @@ a {
 }
 
 .message {
+  animation: fade 50ms ease-out 0ms 1 reverse both;
   display: inline-flex;
   flex-direction: column;
   width: 100%;
-  min-height: 8vh;
-  margin-bottom: 1vh;
+  margin-bottom: 0.5em;
   text-align: left;
-  padding: 1vh;
+  padding: 0.8em;
   border-bottom: 1px solid darkgray;
+}
+
+.pinned {
+  color: #5ebcff;
+  margin-right: 0.5em;
+  transform: rotate(315deg);
 }
 
 .content {
@@ -131,43 +180,6 @@ a {
 }
 .content > button {
   font-size: 1em;
-}
-.report-container {
-  display: inline;
-}
-
-.report {
-  z-index: 3;
-  display: block;
-  position: static;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  height: min-content;
-  background-color: #fff;
-  box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
-  padding: 2vh;
-  border-radius: 6px;
-}
-.report-title {
-  display: flex;
-  flex-direction: row;
-  font-size: 1.4em;
-  margin: 1vh;
-}
-.report-title > span {
-  flex: 1 1;
-}
-
-.report-footer {
-  text-align: end;
-}
-
-.report-footer > span {
-  color: #d3d3d3;
-  margin-right: 1vh;
-}
-.report-footer > button {
-  color: #fff;
 }
 
 .reportbtn {
@@ -202,28 +214,44 @@ a {
 }
 
 .vote-btn {
-  padding: 1vh;
+  padding: 0.3em;
   color: #555;
 }
 .vote-btn:hover {
   color: #5ebcff;
 }
-.upvote-active {
+.vote-btn:active {
+  animation: hoverFloat 50ms ease-in-out 150ms 1 alternate both;
+}
+ /*COMPACT MODE*/
+.compact {
+  padding: 0.2em 0.4em;
+}
+.compact > .sub-content {
+  margin: 0;
+}
+.compact .vote-btn {
+  padding: 0.2em;
+}
+
+/* .upvote-active {
   color: #5ebcff
 } 
 .downvote-active {
   color: #af70e3;
-}
+} */
 
 .chatstuffs {
   border-top: 1px solid #d3d3d3;
+  display: flex;
   align-self: flex-end;
+  flex-flow: wrap;
   width: 100%;
-  padding: 3vh 2vh;
-  display: inline-block;
-  align-content: center;
-  width: 100%;
+  padding: 1em;
+  align-content: stretch;
   font-size: 1em;
+  flex-basis: 10em;
+  justify-content: center;
 }
 
 .userArea {
@@ -232,15 +260,28 @@ a {
 }
 
 .userInput {
-  margin-right: 1vh;
+  margin-right: 0.5em;
 }
 
 .send {
   color: #fff;
   align-self: flex-end;
-  height: 10vh;
-  font-size: 3vh;
-  padding: 2vh;
+  font-size: 1.6em;
+  padding: 0.5em;
+  align-self: stretch;
+}
+
+.disclaimer {
+  display: inline-flex;
+  margin-top: 0.5em;
+  font-size: 0.8em;
+  color: #555;
+}
+.disclaimer > span {
+  align-self: center;
+}
+.disclaimer > .smallbtn {
+  color: #555;
 }
 
 /* .limit {
@@ -252,37 +293,34 @@ a {
 .error {
   /* animation: fadeOut 0.2s ease alternate-reverse both; */
   background-color: #f1f1f1;
-  padding: 1vh;
+  padding: 0.5em;
   display: flex;
   font-size: 1em;
+  border-radius: 6px 0 0 0;
   align-items: center;
 } 
+
 .error > div {
   color: #ee3d00;
   font-weight: bold;
 }
 
-.dis {
-  display: inline-flex;
-  margin-top: 1vh;
-  font-size: 0.8em;
-  color: #555;
-}
-.dis > .smallbtn {
-  color: #555;
-}
-
 @media only screen and (max-height: 770px) {
   .date {
-    font-size: 8px;
-    color: black;
-  }
-  .vote {
-    font-size: 20px;
+    font-size: 0.8em;
   }
 }
 
-@keyframes fadeOut {
+@keyframes hoverFloat {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-0.5vh);
+  }
+}
+
+@keyframes fade {
   0% {
     opacity: 1;
   }
@@ -318,10 +356,7 @@ a {
 }
 
 @media only screen and (max-width: 700px) {
-  .main {
-    width: 90%;
-  }
-  .sidebar {
-    display: none;
+  main {
+    max-width: 90%;
   }
 }
