@@ -1,18 +1,11 @@
 const http = require('http');
 const qs = require('querystring');
-// const Agent = require('agentkeepalive');
-// const stream = require('stream');
 
 const credit = (`Isabelle ${new Date(Date.now()).getFullYear()}`);
 
 //values related to where and how server is hosted
 const hostname = 'localhost';
 const port = '8080';
-
-//https://www.npmjs.com/package/agentkeepalive
-// const keepaliveAgent = new Agent({
-
-// })
 
 //GLOBAL FUNCTIONS
 function printTime() { return (`<${new Date(Date.now()).toLocaleTimeString()}>`) };
@@ -29,6 +22,7 @@ var actS = [];
 var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
 
 //TODO: implement optional chaining: object?.type?.subtype; if any of the types cannot be found the app won't crash and can simply continue without the strict type
+//BIG TODO: rework into HTTP/2; use server push
 const server = http.createServer((req, res) => {
     this.timer = setInterval(() => refresh(), 5000); //set an interval to call refresh every 5 seconds
 
@@ -268,19 +262,26 @@ server.listen(port, hostname, () => {
     //COMMAND INTERPRETER
     stdin.addListener('data', (command) => { //TODO be able to enter commands
         //command is a buffer of raw bytes
-        let buffer = command.toString().replace(/\r?\n|\r/, '').split(' ')
-        switch (buffer[0]) {
-            case 'rmp' : {
-                if (actP[actP.findIndex(x => x.id === buffer[1])]) {
-                    actP.splice(actP.findIndex(x => x.id === buffer[1]) , 1)
-                } else {
-                    console.log('Invalid Post')
+        let buffer = command.toString().replace(/\r?\n|\r/, '').split(' ') //split them into individual strings as an array
+
+        if (actP[actP.findIndex(x => x.id === buffer[1])]) { //check if post id given exists
+            switch (buffer[0]) {
+                case 'rmp' : { //remove post
+                    actP.splice(actP[actP.findIndex(x => x.id === buffer[1])] , 1)
+                    break;
                 }
-                break;
+                case 'mdp' : { //modify post
+    
+                }
+                case 'pin' : { //pin post
+    
+                }
+                default : {
+                    console.log('Invalid Command')
+                }
             }
-            default : {
-                console.log('Invalid Command')
-            }
+        } else {
+            console.log('Invalid Post ID')
         }
     })
 })

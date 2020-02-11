@@ -1,106 +1,20 @@
 import React from 'react';
 import './App.css';
 import axios from 'axios';
-//import http from 'http';
-// import Agent from 'agentkeepalive';
-
-/*TODO: move error display outside of textarea
-  also add logo, settings menu, as well as filtering for posts*/
-
-//set if loading animation should display
-
-// const keepaliveAgent = new Agent({
-//   maxSockets: 100,
-//   maxFreeSockets: 10,
-//   timeout: 60000, //active socket keepalive for 60 seconds
-//   freeSocketTimeout: 30000, //free socket keepalive for 30 seconds
-// });
-// const options = {
-//   host: 'localhost',
-//   port: 8080,
-//   path: '/',
-//   method: 'GET',
-//   agent: keepaliveAgent,
-// };
-
-
 
 function App() {
 	return (
 		<div className="App" >
-			<Sidebar />
 			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
 			<MessageManager />
+
+			<div className='contact' title='Contact Me!'>
+				<a className='smallbtn' target='_blank' rel="noopener noreferrer" href='https://google.com'><i className='fa fa-question-circle'/></a>
+			</div>
 		</div>
 	);
 }
 
-let mode = true
-function Theme(mode) {
-	const out = mode ? false : true;
-	return (
-		out ? ('#1a1a1a') : ('#fff')
-	)
-}
-
-class Sidebar extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			show: true,
-			contact: false
-		}
-	}
-
-	render() {
-		return (
-			(window.innerWidth > 600) ? ( //check if the client width is greater than 600, if so: assume mobile
-				this.state.show ? (
-					<div className='sidebar' style={{ backgroundColor: Theme(mode), color: Theme(!mode) }}>
-						<div className='sidebar-title noselect'>
-
-							<span>msngr</span>
-							<button aria-label='Hide Sidebar' title='Hide Sidebar' className='smallbtn' onClick={() => {
-								this.setState({
-									show: false
-								})
-							}}><i className='fa fa-chevron-left' /></button>
-						</div>
-						<div className='sidebar-sub'>
-
-						</div>
-						<div className='sidebar-footer'>
-							<button
-								aria-label={mode ? ('Switch to Dark Mode?') : ('Switch to Light Mode?')}
-								title={mode ? ('Switch to Dark Mode?') : ('Switch to Light Mode?')}
-								className='smallbtn'
-								onClick={() => {
-									mode = !mode
-
-								}}
-							><i className='fa fa-moon-o' /></button>
-							<button className='smallbtn' onClick={() => {
-								this.setState({ contact: !this.state.contact })
-							}}>Contact Me</button>
-							{this.state.contact ? (<span><span className='noselect'>Discord: </span>whii#5851</span>) : false}
-						</div>
-					</div>
-				) : (
-						<div className='sidebar-enable'>
-							<button aria-label='Show Sidebar' title='Show Sidebar' className='smallbtn' onClick={() =>
-								(this.setState({
-									show: true
-								}))
-
-							}><i className='fa fa-chevron-right' /></button>
-						</div>
-					)
-			) : false
-		)
-	}
-}
-
-//, {httpAgent: new http.Agent({ keepAlive: true })}
 async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`http://localhost:8080?q=posts`)
@@ -119,7 +33,6 @@ async function fetchData() {
 }
 
 async function sendData(query, data, id, action) {
-	console.log(query + ' : ' + data + ' : ' + id + ' : ' + action)
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
@@ -168,19 +81,17 @@ async function sendData(query, data, id, action) {
 class MessageManager extends React.Component {
 	constructor(props) {
 		super(props);
-		this.handleSend = this.handleSend.bind(this);
+		this.reportCallback = this.reportCallback.bind(this);
+		this.messageCallback = this.messageCallback.bind(this);
 		this.var = {
 			maxLoadedPosts: 128,
-			maxLength: 128,
 		}
 		this.state = {
+			reportid: undefined,
+			report: false,
 			posts: [],
-			messageContent: '',
-			report_enable: false,
-			report_content: '',
-			report_id: null,
 			nopost: true,
-			disclaimer: true,
+			error: {enable: true, info: 'Sample Error Text!'}
 		}
 		//maybe let user configure how many posts to allow at once, since it may decrease performance
 	}
@@ -210,24 +121,25 @@ class MessageManager extends React.Component {
 
 	refresh() { this.fetchToComponent(); }
 
-	async handleSend() {
-		const content = this.state.messageContent;
-
-		if (content.trim().length >= 2) {
-			await sendData('post', content)
-				.then(() => {
-					this.setState({ messageContent: '' });
-					this.fetchToComponent();
-				})
-				.catch(reject => { console.log(reject) })
-		} else {
-			//show error
-		}
-	}
-	onEnterPress = (e) => {
-		if (e.keyCode === 13 && e.shiftKey === false) {
-			e.preventDefault();
-			this.handleSend();
+	//callbacks from children
+	reportCallback() { this.setState({ report: false }) }
+	messageCallback(state) { 
+		switch (state) {
+			case 0 : { //state 0 is success
+				this.fetchToComponent(); //fetch new messages
+				break;
+			}
+			case 1 : { //generic send error
+				this.setState({error: {enable: true, info: 'Message failed to send! Try again later...'}})
+				break;
+			}
+			case 2 : { //message too short
+				this.setState({error: {enable: true, info: 'Message too short to send!'}})
+				break;
+			}
+			default : { //unknown error
+				console.log('Unknown error state returned from messageCallback!')
+			}
 		}
 	}
 
@@ -235,93 +147,46 @@ class MessageManager extends React.Component {
 
 	render() {
 		return (
-			<div className='main' style={{ backgroundColor: Theme(mode), color: Theme(!mode) }}>
+			<div className='main'>
 
-				{this.state.report_enable && <div className='report noselect'>
-					<div className='report-title'>
-						<span>Report post?</span>
-						<button aria-label='Close Report Dialog' className='smallbtn' onClick={() => {
-							this.setState({
-								report_enable: false
-							})
-						}}><i className='fa fa-close' /></button>
-					</div>
+				{this.state.error.enable ? <div className='error noselect'>
+					<button className='smallbtn' aria-label='Close Error Message' onClick={() => {
+						this.setState({error: {enable: false, info: ''}})
+					}}><i className='fa fa-close'/></button><div>{this.state.error.info}</div>
+				</div> : false}
 
-					<p>Please provide a reason for your report. (Max 400 characters)</p>
-					<textarea
-						aria-label='Report Dialog Textbox'
-						maxLength={400} autoFocus={true}
-						onChange={(event) => {
-							this.setState({
-								report_content: event.target.value
-							});
-						}}
-
-					/>
-					<div className='report-footer'>
-						<span>post id: {this.state.report_id}</span>
-						<button className='btn'
-							value={this.state.report_content}
-							onClick={() => {
-								this.setState({
-									report_enable: false
-								})
-
-								sendData('report', this.state.report_content, this.state.report_id, undefined)
-									.then(() => {
-										this.setState({
-											report_content: ''
-										})
-									})
-									.catch((reject) => {
-										console.log(reject)
-									})
-							}}
-						>Send report</button>
-					</div>
-				</div>}
+				{this.state.report ? <Report id={this.state.reportid} callback={this.reportCallback} /> : false}
 
 				<div className='message-container'>
-					<div className='settings'></div>
 
-					{this.state.nopost && <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div>}
+					{this.state.nopost ? <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div> : false}
 
-					{this.state.posts.map((data, index) => ( /* use async await */
+					{this.state.posts.map((data, index) => ( /* TODO: use async await */
 						<div className='message' key={index} value={data.postID}>
 							<div className='content'>{data.content.toString() /*Render as toString, just to ensure xss is unlikely*/}<button
-								title='Report this post?'
-								aria-label='Report Post'
+								title='Report this post?' aria-label='Report Post'
 								className='smallbtn reportbtn'
-								onClick={() => {
-									const id = data.id
-									this.setState({ report_id: id, report_enable: true })
-								}}
-							>
+								onClick={() => { this.setState({ report: true, reportid: data.id }) }}>
 								<i className='fa fa-flag' /></button></div>
 							<div className='sub-content'>
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()} {this.state.debug && data.id}</div>
 								<div className='vote'>
-									<button aria-label='Upvote Post' className='smallbtn vote-btn noselect'
-										value={false}
+									<button aria-label='Upvote Post' className='smallbtn vote-btn upvote-active noselect'
 										onClick={(upvoteevent) => {
-											upvoteevent.currentTarget.value = !upvoteevent.currentTarget.value
-											if (upvoteevent.currentTarget.value) {
-												upvoteevent.currentTarget.style.color = '#5ebcff'
-											} else {
-												upvoteevent.currentTarget.style.color = '#555'
-											}
+											// upvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'upvote');
 											this.fetchToComponent(); //refresh
 										}}><i className='fa fa-chevron-circle-up' /></button>
-									<span className='vote-amount noselect'>{data.votes.total}</span>
-									<button aria-label='Downvote Post' className='smallbtn vote-btn noselect'
+
+									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{
+										Math.abs() > 999 ? //round value to nearest thousand, add k suffix
+										Math.sign(data.votes.total)*((Math.abs(data.votes.total)/1000).toFixed(1)) + 'k' : 
+										Math.sign(data.votes.total)*Math.abs(data.votes.total)
+									}</span>
+
+									<button aria-label='Downvote Post' className='smallbtn vote-btn downvote-active noselect'
 										onClick={(downvoteevent) => {
-											downvoteevent.currentTarget.value = !downvoteevent.currentTarget.value
-											if (downvoteevent.currentTarget.value) {
-												downvoteevent.currentTarget.style.color = '#5ebcff'
-											} else {
-												downvoteevent.currentTarget.style.color = '#555'
-											}
+											// downvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'downvote');
 											this.fetchToComponent(); //refresh
 										}}><i className='fa fa-chevron-circle-down' /></button>
@@ -331,24 +196,122 @@ class MessageManager extends React.Component {
 					))}
 				</div>
 
-				<div className="chatstuffs" >
-					<div className='userArea text-message'>
-						<textarea className="userInput noselect" ref="userInputArea" placeholder="Share something!"
-							maxLength={this.var.maxLength} value={this.state.messageContent} autoFocus={true}
-							aria-label='Message textbox'
-							onChange={(event) => {
-								this.setState({
-									messageContent: event.target.value,
-								});
-							}}
-							onKeyDown={this.onEnterPress} />
+				<UserText callback={this.messageCallback} />
 
-						<button aria-label='Send Message' className='send-message btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
-						{false && <canvas className='limit noselect' width={20} height={20}></canvas>}
-					</div>
-					{this.state.disclaimer && <div className='dis'><p>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (CET). </p>
-						<button aria-label='Close Disclaimer' className='smallbtn'><i className='fa fa-close' onClick={() => { this.setState({ disclaimer: false }) }} /></button></div>}
+			</div>
+		)
+	}
+}
 
+//TODO: let user customize
+// class Settings extends React.Component {
+// 	constructor(props) {
+// 		super(props);
+// 	}
+
+// 	render() {
+// 		return (
+// 			<div className='settings'>
+
+// 			</div>
+// 		)
+// 	}
+// }
+
+class UserText extends React.Component {
+	constructor(props) {
+		super(props);
+		this.handleSend = this.handleSend.bind(this);
+		this.var = {
+			maxLength: 128
+		}
+		this.state = {
+			content: '',
+			disclaimer: true,
+		}
+	}
+
+	async handleSend() {
+		const content = this.state.content;
+
+		//check if total length excluding whitespace is more than 2 char
+		if (content.trim().length >= 2) {
+			await sendData('post', content)
+				.then(() => {
+					this.setState({ content: '' });
+					this.props.callback(0);
+				})
+				.catch(reject => { 
+					console.log(reject); 
+					this.props.callback(1);
+				})
+		} else { //show error
+			this.props.callback(2);
+		}
+	}
+
+	onEnterPress = (e) => { if (e.keyCode === 13 && e.shiftKey === false) { e.preventDefault(); this.handleSend(); } }
+
+	render() {
+		return (
+			<div className="chatstuffs" >
+				<div className='userArea'>
+					<textarea className="userInput noselect" placeholder="Share something!"
+						maxLength={this.var.maxLength} value={this.state.content} autoFocus={true}
+						aria-label='Message textbox'
+						onChange={(event) => { this.setState({ content: event.target.value, }); }}
+						onKeyDown={this.onEnterPress} />
+
+					<button aria-label='Send Message' className='send-message btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
+					{false && <canvas className='limit noselect' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
+				</div>
+				{this.state.disclaimer ?
+					<div className='dis'>
+						<p>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (CET). </p>
+						<button aria-label='Close Disclaimer' className='smallbtn' onClick={() => { this.setState({ disclaimer: false }) }}>
+							<i className='fa fa-close' /></button></div> : false}
+			</div>
+		)
+	}
+}
+
+class Report extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			content: '',
+		}
+	}
+
+	close() { this.props.callback(); }
+
+	render() {
+		return (
+			<div className='report noselect'>
+				<div className='report-title'>
+					<span>Report post?</span>
+					<button aria-label='Close Report Dialog' className='smallbtn' onClick={() => { this.close(); }}>
+						<i className='fa fa-close' /></button>
+				</div>
+
+				<span className='noselect'>Please provide a reason for your report. (Max 400 characters)</span>
+				<textarea
+					aria-label='Report Dialog Textbox'
+					maxLength={400} autoFocus={true}
+					onChange={(event) => { this.setState({ content: event.target.value }); }}
+				/>
+				<div className='report-footer'>
+					<span>post id: {this.props.id}</span>
+					<button className='btn'
+						value={this.state.content}
+						onClick={() => {
+							sendData('report', this.state.content, this.props.id)
+								.then(() => { 
+									this.setState({ content: '' }); 
+									this.close(); })
+								.catch((reject) => { console.log(reject) })
+						}}
+					>Send report</button>
 				</div>
 			</div>
 		)
