@@ -222,7 +222,7 @@ const server = http.createServer((req, res) => {
                         if (actP.find(x => x.id === qs.decode(req.url, '?').id)) {
                             handleData()
                                 .then((resolve) => {
-                                    console.log(`[REPORT]${printTime()} ${JSON.stringify(actP[actP.findIndex(x => x.id === qs.decode(req.url, '?').id)])} Reason: "${resolve}" `)
+                                    console.log(`[REPORT]${printTime()} ${JSON.stringify(actP[actP.findIndex(x => x.id === qs.decode(req.url, '?').id)].id)} Reason: "${resolve}" `)
                                 })
                                 .catch((reject) => {
                                     req.statusCode = 500; //Internal server error
@@ -262,8 +262,7 @@ server.listen(port, hostname, () => {
     console.log(`[INFO]${printTime()} Server running at http://${hostname}:${port}/, ${credit}`);
 
     //COMMAND INTERPRETER
-    stdin.addListener('data', (command) => { //TODO be able to enter commands
-        //command is a buffer of raw bytes
+    stdin.addListener('data', (command) => { //command is a buffer of raw bytes
         let buffer = command.toString().replace(/\r?\n|\r/, '').split(' ') //split them into individual strings as an array
 
         function exists(id) {
@@ -271,16 +270,17 @@ server.listen(port, hostname, () => {
                 try {
                     let foundIndex = actP.findIndex(x => x.id === id)
                     resolve(foundIndex);
-                } catch (err) {
-                    reject('Failed to find post')
-                }
+                } catch (err) { reject('Failed to find post.') };
             })
         }
 
-        switch (buffer[0]) { //BUG: rmp removes the post preceeding the chosen post, if it's pinned?
+        switch (buffer[0]) { //BUG: removes pinned posts instead of chosen post
             case 'rmp': { //remove post
                 exists(buffer[1])
-                    .then(index => { actP.splice(actP[index], 1) })
+                    .then(index => { 
+                        console.log(`Removed post: ${JSON.stringify(actP[index].id)}`); 
+                        actP.splice(actP[index], 1) 
+                    })
                     .catch(err => { console.log(err) })
                 break;
             }
@@ -289,18 +289,19 @@ server.listen(port, hostname, () => {
             }
             case 'pin': { //pin post
                 exists(buffer[1])
-                    .then(index => { actP[index].pinned = true })
+                    .then(index => { 
+                        console.log(`Pinned post: ${JSON.stringify(actP[index].id)}`);
+                        actP[index].pinned = true 
+                    })
                     .catch(err => { console.log(err) })
                 break;
             }
             case 'ban': { //ban ip adress
-
+                
             }
             default: {
                 console.log('Invalid Command')
             }
         }
-
-
     })
 })

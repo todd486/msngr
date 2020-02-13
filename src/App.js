@@ -11,13 +11,8 @@ function App() {
 			<MessageManager />
 
 			<div className='contact' >
-				<a
-					aria-label='Contact Me.'
-					title='Contact Me!'
-					className='smallbtn'
-					target='_blank'
-					rel="noopener noreferrer"
-					href='https://google.com'>
+				<a aria-label='Contact Me.' title='Contact Me!' className='smallbtn'
+					target='_blank' rel="noopener noreferrer" href='https://google.com'>
 					<i className='fa fa-question-circle' /></a>
 			</div>
 		</div>
@@ -92,6 +87,7 @@ class MessageManager extends React.Component {
 		super(props);
 		this.reportCallback = this.reportCallback.bind(this);
 		this.messageCallback = this.messageCallback.bind(this);
+		this.voteCallback = this.voteCallback.bind(this);
 		this.var = {
 			maxLoadedPosts: 128,
 		}
@@ -112,14 +108,20 @@ class MessageManager extends React.Component {
 	}
 	componentWillUnmount() { clearInterval(this.timer) };
 
-	async fetchToComponent() {
-		await fetchData() //promise based fetching
-			.then(resolve => {
-				this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
-					nopost: false, posts: resolve.data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
-					//TODO:split sorting into separate function, which .map will await before rendering
-					//posts: this.state.posts.concat(resolve.data) //note to self: push bad, concat good
-				})
+	fetchToComponent() {
+		fetchData() //promise based fetching
+			.then((resolve) => {
+				this.sortMessages(resolve.data)
+					.then(() => {
+						this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
+							nopost: false,
+							posts: resolve.data
+							//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
+						})
+					})
+					.catch(reject => (
+						reject(reject)
+					))
 			})
 			.catch(reject => {
 				console.log(reject)
@@ -127,18 +129,20 @@ class MessageManager extends React.Component {
 			})
 	}
 
-	refresh() { this.fetchToComponent(); }
-
 	round(x) { //round value to nearest thousand, add k suffix
 		return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x)
 	}
 
+	refresh() { this.fetchToComponent(); }
+
 	//callbacks from children
 	reportCallback() { this.setState({ report: false }) }
+	voteCallback() { this.refresh(); }
 	messageCallback(state) {
 		switch (state) {
 			case 0: { //state 0 is success
 				this.fetchToComponent(); //fetch new messages
+				this.setState({ error: { enable: false, info: '' } })
 				break;
 			}
 			case 1: { //generic send error
@@ -153,6 +157,15 @@ class MessageManager extends React.Component {
 				console.log('Unknown error state returned from messageCallback!')
 			}
 		}
+	}
+
+	sortMessages(data) {
+		return new Promise((resolve, reject) => {
+			try {
+				data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
+				resolve();
+			} catch (err) { reject(err) }
+		})
 	}
 
 	/* mapping the data with a key of {index}, display data.content */
@@ -170,11 +183,11 @@ class MessageManager extends React.Component {
 
 				<div className='message-container'>
 					{this.state.nopost ? <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div> : false}
-
-					{this.state.posts.map((data, index) => ( //TODO: filter out vulgarity if user requests it
+					{this.state.posts.map((data, index) => (
 						<div aria-live='polite' className={'message'} key={index} value={data.postID}>
-							<div className='content'>
-								{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}{data.content.toString()}
+							<div className='content' value={this.state.debug ? data.id : null}>
+								{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
+								{data.content.toString() /* Rendering as toString() for xss reasons */}
 								{data.pinned ? false : //if a post is pinned it shouldn't be reportable
 									<button
 										title='Report this post?' aria-label='Report Post'
@@ -182,27 +195,27 @@ class MessageManager extends React.Component {
 										onClick={() => { this.setState({ report: true, reportid: data.id }) }}>
 										<i className='fa fa-flag' /></button>}</div>
 							<div className='sub-content'>
-								{this.state.debug ? <span className='date'>{data.id}</span> : false}
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
 								<div className='vote'>
 									<button aria-label='Upvote Post' className='smallbtn vote-btn upvote-active noselect'
 										onClick={(upvoteevent) => {
 											// upvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'upvote')
-											.then(() => {this.fetchToComponent();}) //refresh
+												.then(() => { this.fetchToComponent(); }) //refresh
 										}}><i className='fa fa-chevron-circle-up' /></button>
 									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{this.round(data.votes.total)}</span>
 									<button aria-label='Downvote Post' className='smallbtn vote-btn downvote-active noselect'
 										onClick={(downvoteevent) => {
 											// downvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'downvote')
-											.then(() => {this.fetchToComponent();}) //refresh
+												.then(() => { this.fetchToComponent(); }) //refresh
 										}}><i className='fa fa-chevron-circle-down' /></button>
 								</div>
 							</div>
 						</div>
 					))}
 				</div>
+
 
 				<UserText callback={this.messageCallback} />
 
@@ -214,51 +227,7 @@ class MessageManager extends React.Component {
 //TODO: let user customize types of display to suit their needs:
 //compact mode, dark mode / themes in general (save in cookie)
 
-// eslint-disable-next-line
-class Settings extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			theme: { //TODO: let user push own themes into state
-				default_light: {
-					background1: '#af70e3',
-					background2: '#ffffff',
-					maintext: '#000000',
-					subtext: '#555555',
-					aux1: '#d3d3d3', //spacers and inactive objects
-					aux2: '#5ebcff', //upvote
-					aux3: '#af70e3', //downvote
-				},
-				default_dark: {
-					background1: '#555555',
-					background2: '',
-					text: '#ffffff',
-					subtext: '#a5a5a5',
-					aux1: '',
-					aux2: '',
-					aux3: '',
-				},
-			},
-			display: {
-				compact: false,
-				vulgarity: true,
-			},
-			sorting: {
-				popular: true,
-				controversial: false,
-				new: false,
-			}
-		}
-	}
 
-	render() {
-		return (
-			<div className='settings'>
-
-			</div>
-		)
-	}
-}
 
 class UserText extends React.Component {
 	constructor(props) {
@@ -324,6 +293,7 @@ class Report extends React.Component {
 		super(props);
 		this.state = {
 			content: '',
+			error: { enable: false, message: '' }
 		}
 	}
 
@@ -346,13 +316,20 @@ class Report extends React.Component {
 					onChange={(event) => { this.setState({ content: event.target.value }); }}
 				/>
 				<div className='report-footer'>
+					{this.state.error.enable ? <span>
+						{this.state.error.message}
+					</span> : false}
 					<span>post id: {this.props.id}</span>
 					<button className='btn'
 						value={this.state.content}
 						onClick={() => {
-							sendData('report', this.state.content, this.props.id)
-								.then(() => { this.close(); })
-								.catch((reject) => { console.log(reject) })
+							if (this.state.content.length >= 3) {
+								sendData('report', this.state.content, this.props.id)
+									.then(() => { this.close(); })
+									.catch((reject) => { console.log(reject) })
+							} else {
+								this.setState({ error: { enable: true, message: 'Please enter an appropriate report.' } })
+							}
 						}}
 					>Send report</button>
 				</div>
