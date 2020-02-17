@@ -5,16 +5,27 @@ import axios from 'axios';
 function App() {
 	return (
 		<div className="App" >
-			<header></header>
-
 			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
-			<MessageManager />
 
-			<div className='contact' >
-				<a aria-label='Contact Me.' title='Contact Me!' className='smallbtn'
-					target='_blank' rel="noopener noreferrer" href='https://google.com'>
-					<i className='fa fa-question-circle' /></a>
-			</div>
+			<header>
+				<img className='logo' src='favicon.ico' alt='msngr logo' title='msngr logo' />
+				<span className='noselect'>msngr</span>
+				<aside>
+					<a aria-label='Contact Me' title='Contact Me' className='smallbtn'
+						target='_blank' rel="noopener noreferrer" href='https://google.com'>
+						<i className='fa fa-envelope' /></a>
+					<button aria-label='About this web-app' title='About' className='smallbtn'
+						onClick={() => {
+
+						}}><i className='fa fa-question-circle' /></button>
+					<button aria-label='Change Settings' title='Settings' className='smallbtn'
+						onClick={() => {
+
+						}}><i className='fa fa-cog' /></button>
+				</aside>
+			</header>
+
+			<MessageManager />
 		</div>
 	);
 }
@@ -112,16 +123,13 @@ class MessageManager extends React.Component {
 		fetchData() //promise based fetching
 			.then((resolve) => {
 				this.sortMessages(resolve.data)
-					.then(() => {
+					.then((sorted) => {
 						this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
 							nopost: false,
-							posts: resolve.data
+							posts: sorted
 							//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
 						})
 					})
-					.catch(reject => (
-						reject(reject)
-					))
 			})
 			.catch(reject => {
 				console.log(reject)
@@ -129,9 +137,9 @@ class MessageManager extends React.Component {
 			})
 	}
 
-	round(x) { //round value to nearest thousand, add k suffix
+	round(x) {
 		return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x)
-	}
+	} //round value to nearest thousand, add k suffix
 
 	refresh() { this.fetchToComponent(); }
 
@@ -162,14 +170,13 @@ class MessageManager extends React.Component {
 	sortMessages(data) {
 		return new Promise((resolve, reject) => {
 			try {
-				data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
-				resolve();
-			} catch (err) { reject(err) }
+				resolve(((data)
+					.sort((a, b) => b.date - a.date))
+					.sort((a, b) => b.pinned - a.pinned));
+			} catch (err) { reject(err); }
 		})
 	}
-
 	/* mapping the data with a key of {index}, display data.content */
-
 	render() { //TODO: implement workers
 		return (
 			<main>
@@ -196,17 +203,15 @@ class MessageManager extends React.Component {
 										<i className='fa fa-flag' /></button>}</div>
 							<div className='sub-content'>
 								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
-								<div className='vote'>
+								<div className='vote' value={0}>
 									<button aria-label='Upvote Post' className='smallbtn vote-btn upvote-active noselect'
 										onClick={(upvoteevent) => {
-											// upvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'upvote')
 												.then(() => { this.fetchToComponent(); }) //refresh
 										}}><i className='fa fa-chevron-circle-up' /></button>
 									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{this.round(data.votes.total)}</span>
 									<button aria-label='Downvote Post' className='smallbtn vote-btn downvote-active noselect'
 										onClick={(downvoteevent) => {
-											// downvoteevent.currentTarget.value
 											sendData('vote', null, data.id, 'downvote')
 												.then(() => { this.fetchToComponent(); }) //refresh
 										}}><i className='fa fa-chevron-circle-down' /></button>
@@ -268,21 +273,31 @@ class UserText extends React.Component {
 	render() { //might restructure to be a form for accessibility
 		return (
 			<div className="chatstuffs" >
+				{this.state.disclaimer ?
+					<footer className='disclaimer'>
+						<span>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (GMT). </span>
+						<button aria-label='Close Disclaimer' className='btn'
+							onClick={() => {
+								this.setState({ disclaimer: false })
+							}}
+						>Start Chatting!</button></footer> : false}
+
 				<div className='userArea'>
 					<textarea className="userInput noselect" placeholder="Share something!"
-						maxLength={this.var.maxLength} value={this.state.content} autoFocus={true}
+						maxLength={this.var.maxLength} value={this.state.content}
 						aria-label='Message textbox. Press enter to send a message.'
 						onChange={(event) => { this.setState({ content: event.target.value, }); }}
 						onKeyDown={this.onEnterPress} />
 
-					<button aria-label='Send Message' className='send-message btn send' onClick={this.handleSend}><i className="fa fa-send" /></button>
+					<button aria-label='Send Message' className='send-message btn send'
+						disabled={this.state.content.trim().length >= 2 ? false : true}
+						style={this.state.content.trim().length >= 2 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
+						onClick={this.handleSend}><i className="fa fa-send" /></button>
 					{false && <canvas className='limit noselect' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
 				</div>
-				{this.state.disclaimer ?
-					<footer className='disclaimer'>
-						<span>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (GMT). </span>
-						<button aria-label='Close Disclaimer' className='smallbtn' onClick={() => { this.setState({ disclaimer: false }) }}>
-							<i className='fa fa-close' /></button></footer> : false}
+
+
+
 			</div>
 		)
 	}

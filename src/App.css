@@ -1,9 +1,5 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Varela Round', Helvetica, sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Varela Round', Helvetica, sans-serif; }
+html { scroll-behavior: smooth; }
 
 @font-face {
   font-family: 'Varela Round';
@@ -13,8 +9,48 @@
   font-display: swap;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-html {
-  scroll-behavior: smooth;
+
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #af70e3;
+}
+
+header {
+  display: flex;
+  width: 100%;
+  height: 3em;
+  padding: 0.5em;
+  align-items: center;
+  background-color: #fff;
+  border-bottom: 1px solid #d3d3d3;
+}
+
+header > span {
+  flex: 1 1;
+  text-align: left;
+}
+
+header > .logo {
+  max-height:100%;
+  margin-right: 1vw;
+}
+
+main {
+  /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
+  background-color: #fff;
+  border-radius: 8px 0 8px 8px;
+  border: 1px solid #d3d3d3;
+  display: flex;
+  flex-direction: column;
+  height: 91vh;
+  max-width: 70%;
+  z-index: 1;
+  margin: 1em 1.5em;
 }
 
 textarea {
@@ -25,29 +61,8 @@ textarea {
   padding: 0.8em;
 }
 
-a {
-  color: #fff;
-}
-
-.contact {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  color: #fff;
-  border-radius: 0 6px 0 0;
-  z-index: 2;
-  background-color: #5ebcff;
-  box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
-}
-
-.App {
-  text-align: center;
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  justify-content: center;
-  overflow: hidden;
-  background-color: #af70e3;
+.noselect {
+  user-select: none;
 }
 
 .loading {
@@ -68,20 +83,6 @@ a {
   stroke-width: 6;
   stroke-dasharray: 250;
   stroke-dashoffset: 1000;
-}
-
-
-main {
-  /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
-  background-color: #fff;
-  border-radius: 8px 0 8px 8px;
-  border: 1px solid #d3d3d3;
-  display: inline-flex;
-  flex-direction: column;
-  max-width: 70%;
-  z-index: 1;
-  margin: 1em 1.5em;
-  flex: 1 1;
 }
 
 .report {
@@ -129,18 +130,15 @@ main {
 .btn {
   padding: 0.8vh;
   border: none;
-  background-color: #5ebcff;
   font-size: 2vh;
   border-radius: 6px;
   cursor: pointer;
 }
 
-.noselect {
-  user-select: none;
-}
 
 .message-container {
-  border-radius: 6px;
+  /* box-shadow: inset 0px 2px 19px 0px rgba(0,0,0,0.5); */
+  border-radius: 6px 0 0 0;
   overflow-y: scroll;
   padding: 1em;
   height: 100%;
@@ -212,8 +210,7 @@ main {
   color: #d3d3d3;
 }
 .vote-btn:hover {
-  color: #5ebcff;
-  animation: hoverFloat 50ms ease-in-out 150ms 1 alternate both;
+  color: #555;
 }
  /*COMPACT MODE*/
 .compact {
@@ -234,25 +231,25 @@ main {
 } */
 
 .chatstuffs {
+  position: relative;
   border-top: 1px solid #d3d3d3;
-  display: flex;
-  align-self: flex-end;
-  flex-flow: wrap;
   width: 100%;
-  padding: 1em;
-  align-content: stretch;
   font-size: 1em;
+  display: flex;
   flex-basis: 10em;
-  justify-content: center;
 }
 
 .userArea {
   display: flex;
+  margin: 1em;
   width: 100%;
 }
 
 .userInput {
-  margin-right: 0.5em;
+  height: 100%;
+  margin-right: 1em;
+  flex: 1 1;
+
 }
 
 .send {
@@ -260,21 +257,31 @@ main {
   align-self: flex-end;
   font-size: 1.6em;
   padding: 0.5em;
-  align-self: stretch;
+  height: 100%;
 }
 
 .disclaimer {
-  display: inline-flex;
-  margin-top: 0.5em;
-  font-size: 0.8em;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  padding: 1em;
+  font-size: 1em;
   color: #555;
 }
 .disclaimer > span {
+  margin: 0.5em;
+}
+.disclaimer > button {
   align-self: center;
+  color: #fff;
+  width: 35%;
+  
+  background-color: #5ebcff;
 }
-.disclaimer > .smallbtn {
-  color: #555;
-}
+
 
 /* .limit {
   display: inline-flex;
