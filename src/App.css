@@ -10,7 +10,7 @@ html { scroll-behavior: smooth; }
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-.App {
+.AppContainer {
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -23,11 +23,12 @@ html { scroll-behavior: smooth; }
 header {
   display: flex;
   width: 100%;
-  height: 3em;
+  height: 2.5em;
   padding: 0.5em;
   align-items: center;
   background-color: #fff;
   border-bottom: 1px solid #d3d3d3;
+  z-index: 3;
 }
 
 header > span {
@@ -40,30 +41,42 @@ header > .logo {
   margin-right: 1vw;
 }
 
+a { color: #000; }
+
 main {
   /* box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6); */
+  position: relative;
   background-color: #fff;
   border-radius: 8px 0 8px 8px;
   border: 1px solid #d3d3d3;
   display: flex;
   flex-direction: column;
-  height: 91vh;
-  max-width: 70%;
+  height: 100%;
+  width: 70%;
   z-index: 1;
   margin: 1em 1.5em;
 }
+
+.menu {
+  background-color: #fff;
+  height: 100%;
+  width: 100%;
+  z-index: 2;
+}
+
+.submenu { display: flex; flex-direction: column; padding: 1em; height: 100%; }
+.submenu > * { margin-bottom: 0.5em; }
 
 textarea {
   border-radius: 6px;
   resize: none;
   width: 100%;
+  height: 100%;
   font-size: 1em;
   padding: 0.8em;
 }
 
-.noselect {
-  user-select: none;
-}
+.noselect { user-select: none; }
 
 .loading {
   position: absolute;
@@ -86,17 +99,18 @@ textarea {
 }
 
 .report {
+  position: absolute;
   display: flex;
   flex-direction: column;
   background-color: #fff;
   width: 100%;
-  min-height: 50%;
+  height: 50%;
   box-shadow: 0px 3px 10px 0px rgba(0, 0, 0, 0.6);
   padding: 1em;
   border-radius: 6px;
+  z-index: 4;
 }
 .report > textarea {
-  height: 100%;
   margin: 1vh 0;
 }
 .report-title {
@@ -105,19 +119,10 @@ textarea {
   font-size: 1.4em;
   margin: 1vh;
 }
-.report-title > span {
-  flex: 1 1;
-}
-.report-footer {
-  text-align: end;
-}
-.report-footer > span {
-  color: #d3d3d3;
-  margin-right: 1vh;
-}
-.report-footer > button {
-  color: #fff;
-}
+.report-title > span { flex: 1 1; }
+.report-footer { text-align: end; }
+.report-footer > span { color: #d3d3d3; margin-right: 1vh; }
+.report-footer > button { color: #fff; }
 
 .smallbtn {
   display: inline;
@@ -144,9 +149,7 @@ textarea {
   height: 100%;
 }
 
-.nopost {
-  color: #555;
-}
+.nopost { color: #555; }
 
 .message {
   animation: fade 50ms ease-out 0ms 1 reverse both;
@@ -246,10 +249,8 @@ textarea {
 }
 
 .userInput {
-  height: 100%;
   margin-right: 1em;
   flex: 1 1;
-
 }
 
 .send {
@@ -264,24 +265,20 @@ textarea {
   width: 100%;
   height: 100%;
   position: absolute;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
-  padding: 1em;
-  font-size: 1em;
-  color: #555;
-}
-.disclaimer > span {
-  margin: 0.5em;
+  align-items: center;
+  justify-content: space-evenly;
+  white-space: pre-line;
+  padding: 1.5em;
+  font-size: 1.8vh;
+  color: #000;
 }
 .disclaimer > button {
-  align-self: center;
-  color: #fff;
-  width: 35%;
-  
   background-color: #5ebcff;
+  color: #fff;
 }
-
 
 /* .limit {
   display: inline-flex;
@@ -307,6 +304,15 @@ textarea {
 @media only screen and (max-height: 770px) {
   .date {
     font-size: 0.8em;
+  }
+}
+
+@media only screen and (max-width: 700px) {
+  main {
+    width: 90%;
+  }
+  header {
+    font-size: 1.3em;
   }
 }
 
@@ -354,8 +360,4 @@ textarea {
   background: #555;
 }
 
-@media only screen and (max-width: 700px) {
-  main {
-    max-width: 90%;
-  }
-}
+

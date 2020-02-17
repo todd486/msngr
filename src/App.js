@@ -2,34 +2,6 @@ import React from 'react';
 import './App.css';
 import axios from 'axios';
 
-function App() {
-	return (
-		<div className="App" >
-			{false && <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div>}
-
-			<header>
-				<img className='logo' src='favicon.ico' alt='msngr logo' title='msngr logo' />
-				<span className='noselect'>msngr</span>
-				<aside>
-					<a aria-label='Contact Me' title='Contact Me' className='smallbtn'
-						target='_blank' rel="noopener noreferrer" href='https://google.com'>
-						<i className='fa fa-envelope' /></a>
-					<button aria-label='About this web-app' title='About' className='smallbtn'
-						onClick={() => {
-
-						}}><i className='fa fa-question-circle' /></button>
-					<button aria-label='Change Settings' title='Settings' className='smallbtn'
-						onClick={() => {
-
-						}}><i className='fa fa-cog' /></button>
-				</aside>
-			</header>
-
-			<MessageManager />
-		</div>
-	);
-}
-
 async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`http://localhost:8080?q=posts`)
@@ -46,7 +18,6 @@ async function fetchData() {
 			})
 	})
 }
-
 async function sendData(query, data, id, action) {
 	switch (query) {
 		case 'post': {
@@ -93,6 +64,70 @@ async function sendData(query, data, id, action) {
 	}
 }
 
+function App() {
+	return (
+		<div className="App" >
+			<AppContainer />
+		</div>
+	);
+}
+
+class AppContainer extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			loading: false,
+			showMenu: false,
+			about: false,
+		}
+	}
+
+	render() {
+		return (
+			<div className='AppContainer'>
+				{this.state.loading ? <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div> : false}
+
+				<header>
+					<img className='logo' src='favicon.ico' alt='msngr logo' title='msngr logo' />
+					<span className='noselect'>msngr</span>
+					<aside>
+						<a aria-label='Contact Me' title='Contact Me' className='smallbtn'
+							target='_blank' rel="noopener noreferrer" href='mailto:filip.svahn@elev.ga.ntig.se'>
+							<i className='fa fa-envelope' /></a>
+						<a aria-label='GitHub Repository for msngr' title='GitHub' className='smallbtn'
+							target='_blank' rel="noopener noreferrer" href='https://github.com/todd486/msngr'
+						><i className='fa fa-github' /></a>
+						<button aria-label='About this web-app' title='About' className='smallbtn'
+							onClick={() => {
+								this.setState({ showMenu: !this.state.showMenu, about: true, })
+							}}><i className='fa fa-question-circle' /></button>
+						<button aria-label='Change Settings' title='Settings' className='smallbtn'
+							onClick={() => {
+								this.setState({ showMenu: !this.state.showMenu, about: false, })
+							}}><i className='fa fa-cog' /></button>
+					</aside>
+				</header>
+
+				{this.state.showMenu ? <div className='menu'>
+					{this.state.about ?
+						<article className='submenu'>
+							{/* About section */}
+							<h1>About msngr</h1>
+							<p>msngr, <i>(pronounced 'Messenger')</i> is an anonymous, open-source messaging service, which is free for anyone to use and communicate freely upon.</p>
+							<p>Created as a school project for my web development course, it is not intended to be a serious method of communication, rather a silly experiment to see what happens when you give people a voice free from the bounds of reality, and letting the masses decide what should stay on the front page for the day.</p>
+							<p>I hope that people can enjoy my little creation and share their thoughts on it.</p>
+							<footer>&copy; Isabelle Svahn, 2020</footer>
+						</article> : <div className='submenu'>
+							{/* Settings section */}
+							<h1>Settings</h1>
+							<button className='smallbtn'>{true ? <i className='fa fa-toggle-on' /> : <i className='fa fa-toggle-off' />}</button>
+						</div>}
+				</div> : <MessageManager />}
+			</div>
+		)
+	}
+}
+
 class MessageManager extends React.Component {
 	constructor(props) {
 		super(props);
@@ -108,7 +143,7 @@ class MessageManager extends React.Component {
 			posts: [],
 			nopost: true,
 			debug: true,
-			error: { enable: false, info: 'Sample Error Text!' }
+			error: { enable: false, info: "You're a curious one, you're not supposed to see this!" }
 		}
 		//maybe let user configure how many posts to allow at once, since it may decrease performance
 	}
@@ -117,7 +152,7 @@ class MessageManager extends React.Component {
 		this.timer = setInterval(() => this.refresh(), 1000) //set an interval to refresh the messages every second
 		this.fetchToComponent();
 	}
-	componentWillUnmount() { clearInterval(this.timer) };
+	componentWillUnmount() { clearInterval(this.timer); };
 
 	fetchToComponent() {
 		fetchData() //promise based fetching
@@ -137,9 +172,8 @@ class MessageManager extends React.Component {
 			})
 	}
 
-	round(x) {
-		return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x)
-	} //round value to nearest thousand, add k suffix
+	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } 
+	//round value to nearest thousand, add k suffix
 
 	refresh() { this.fetchToComponent(); }
 
@@ -275,7 +309,7 @@ class UserText extends React.Component {
 			<div className="chatstuffs" >
 				{this.state.disclaimer ?
 					<footer className='disclaimer'>
-						<span>Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with. We remove all posts at midnight (GMT). </span>
+						<span>{`Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with.\nWe remove all posts at midnight (GMT).`}</span>
 						<button aria-label='Close Disclaimer' className='btn'
 							onClick={() => {
 								this.setState({ disclaimer: false })
