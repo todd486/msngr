@@ -1,17 +1,13 @@
 import React from 'react';
 import './App.css';
+import './fontawesome.css';
 import axios from 'axios';
 
 async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`http://localhost:8080?q=posts`)
 			.then((response) => {
-				if (response.status === 200) {
-					//check if response.data was empty, if so; reject. since rendering empty objects in react can cause everything to crash
-					if (response.data.length <= 0) { reject('Response data too short to render!'); }
-					else { resolve(response); }
-
-				} else { reject(); }
+				resolve(response)
 			})
 			.catch((error) => {
 				reject(error);
@@ -35,7 +31,7 @@ async function sendData(query, data, id, action) {
 		}
 		case 'vote': {
 			return new Promise((resolve, reject) => {
-				//TODO: send post id as well as user id in query as data. verfiy user id serverside
+				//TODO: send post id as well as user id in query as data. verify user id server side
 				axios.post(`http://localhost:8080?q=${query}?id=${id}?v=${action}`)
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
@@ -75,35 +71,65 @@ function App() {
 class AppContainer extends React.Component {
 	constructor(props) {
 		super(props);
+		this.connError = this.connError.bind(this);
 		this.state = {
-			loading: false,
+			loading: true,
+			loadingError: true,
+			connAttempt: 0,
 			showMenu: false,
 			about: false,
+			settings: { //Defaults
+				profanity: true,
+				compact: false,
+				max_post: 128,
+			}
 		}
+	}
+
+	componentDidMount() { this.connCheck() }
+	componentWillUnmount() { clearInterval(this.timer); }
+	connError() {
+		this.setState({ loading: true, loadingError: true })
+		this.timer = setInterval(() => this.connCheck(), 1000)
+	}
+	connCheck() {
+		fetchData()
+			.then(() => {
+				this.setState({
+					loading: false,
+					loadingError: false,
+					connAttempt: 0,
+				})
+			})
+			.catch((reject) => {
+				this.setState({ connAttempt: this.state.connAttempt + 1 })
+				this.connCheck()
+				console.log(reject)
+			})
 	}
 
 	render() {
 		return (
 			<div className='AppContainer'>
-				{this.state.loading ? <div className="loading"><svg className="loadingicon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div> : false}
+				{this.state.loading ? <div className="loading"><svg className="loading_icon" height="100" width="100"><circle cx="50" cy="50" r="40" /></svg></div> : false}
 
 				<header>
 					<img className='logo' src='favicon.ico' alt='msngr logo' title='msngr logo' />
-					<span className='noselect'>msngr</span>
+					<span className='no_select'>msngr</span>
 					<aside>
-						<a aria-label='Contact Me' title='Contact Me' className='smallbtn'
+						<a aria-label='Contact Me' title='Contact Me' className='small_btn'
 							target='_blank' rel="noopener noreferrer" href='mailto:filip.svahn@elev.ga.ntig.se'>
 							<i className='fa fa-envelope' /></a>
-						<a aria-label='GitHub Repository for msngr' title='GitHub' className='smallbtn'
+						<a aria-label='GitHub Repository for msngr' title='GitHub' className='small_btn'
 							target='_blank' rel="noopener noreferrer" href='https://github.com/todd486/msngr'
 						><i className='fa fa-github' /></a>
-						<button aria-label='About this web-app' title='About' className='smallbtn'
+						<button aria-label='About this web-app' title='About' className='small_btn'
 							onClick={() => {
-								this.setState({ showMenu: !this.state.showMenu, about: true, })
+								this.setState({ showMenu: !this.state.about ? true : !this.state.showMenu, about: true, })
 							}}><i className='fa fa-question-circle' /></button>
-						<button aria-label='Change Settings' title='Settings' className='smallbtn'
+						<button aria-label='Change Settings' title='Settings' className='small_btn'
 							onClick={() => {
-								this.setState({ showMenu: !this.state.showMenu, about: false, })
+								this.setState({ showMenu: this.state.about ? true : !this.state.showMenu, about: false, })
 							}}><i className='fa fa-cog' /></button>
 					</aside>
 				</header>
@@ -113,16 +139,58 @@ class AppContainer extends React.Component {
 						<article className='submenu'>
 							{/* About section */}
 							<h1>About msngr</h1>
-							<p>msngr, <i>(pronounced 'Messenger')</i> is an anonymous, open-source messaging service, which is free for anyone to use and communicate freely upon.</p>
-							<p>Created as a school project for my web development course, it is not intended to be a serious method of communication, rather a silly experiment to see what happens when you give people a voice free from the bounds of reality, and letting the masses decide what should stay on the front page for the day.</p>
+							<p>msngr, <i>(pronounced 'Messenger')</i> is an anonymous, open-source public messaging service, which is free for anyone to use and communicate freely upon.</p>
+							<p>Created as a school project for my web development course in the span of a little more than a month, it is not intended to be a serious method of communication, rather a silly experiment to see what happens when you give people a voice free from the bounds of reality, and letting the masses decide what should stay on the front page for the day.</p>
 							<p>I hope that people can enjoy my little creation and share their thoughts on it.</p>
+							<h2>Privacy Policy and GDPR info</h2>
+							<p>In order to comply with the General Data Protection Regulations put in place by the European Union, none of the posts made to msngr contain any personally identifying information, aside from the IP address used to connect to our servers, which is kept securely inaccessible from the public.</p>
+							<p>Though data which is sent on msngr is <b>unencrypted</b>, so I strongly advice against sending any form of sensitive information on msngr.</p>
+
 							<footer>&copy; Isabelle Svahn, 2020</footer>
-						</article> : <div className='submenu'>
+						</article> : <article className='submenu'>
 							{/* Settings section */}
 							<h1>Settings</h1>
-							<button className='smallbtn'>{true ? <i className='fa fa-toggle-on' /> : <i className='fa fa-toggle-off' />}</button>
-						</div>}
-				</div> : <MessageManager />}
+							<h2>Post settings</h2>
+							<span>
+								<button className={this.state.settings.profanity ? 'small_btn toggle_btn-on toggle_btn' : 'small_btn toggle_btn'} aria-label='Toggle Button' onClick={() => {
+									const x = Object.assign(this.state.settings); //pull the entire object from state
+									x.profanity = !this.state.settings.profanity; //reassign the specified value
+									this.setState({ x }); //set the state back
+									//laggy for unknown reasons when condensed into this.setState(() => {Object.assign(this.state.settings).profanity = !this.state.settings.profanity});
+								}}>{this.state.settings.profanity ? <i className='fa fa-toggle-on' /> : <i className='fa fa-toggle-off' />}</button>
+								<label>Show Profanity</label>
+							</span>
+							<span>
+								<input value={this.state.settings.max_post} type='text'
+									onChange={(event) => {
+										const x = Object.assign(this.state.settings);
+										x.max_post = event.target.value;
+										this.setState({ x });
+									}}
+									onBlur={() => { //onBlur: called on object losing focus
+										let y = Number(this.state.settings.max_post)
+										if (isNaN(y) || (y < 64 || y > 1024)) { //check if y, is less than 64, greater than 1024 and is a number
+											const x = Object.assign(this.state.settings);
+											x.max_post = 128; //default
+											this.setState({ x });
+										}
+									}}></input>
+								<label>Max amount of posts to load</label>
+							</span>
+							<h2>Layout</h2>
+							<span>
+								<button className={this.state.settings.compact ? 'small_btn toggle_btn-on toggle_btn' : 'small_btn toggle_btn'} aria-label='Toggle Button' onClick={() => {
+									const x = Object.assign(this.state.settings);
+									x.compact = !this.state.settings.compact;
+									this.setState({ x });
+								}}>{this.state.settings.compact ? <i className='fa fa-toggle-on' /> : <i className='fa fa-toggle-off' />}</button>
+								<label>Compact Mode</label>
+							</span>
+						</article>}
+				</div> : this.state.loadingError ?
+						<span className='conn' aria-live='assertive'>Could not connect to msngr servers! Attempt: {this.state.connAttempt}</span> :
+						<MessageManager settings={this.state.settings} connError={this.connError} />
+				}
 			</div>
 		)
 	}
@@ -134,14 +202,11 @@ class MessageManager extends React.Component {
 		this.reportCallback = this.reportCallback.bind(this);
 		this.messageCallback = this.messageCallback.bind(this);
 		this.voteCallback = this.voteCallback.bind(this);
-		this.var = {
-			maxLoadedPosts: 128,
-		}
 		this.state = {
-			reportid: undefined,
+			settings: this.props.settings,
+			report_id: undefined,
 			report: false,
 			posts: [],
-			nopost: true,
 			debug: true,
 			error: { enable: false, info: "You're a curious one, you're not supposed to see this!" }
 		}
@@ -160,21 +225,17 @@ class MessageManager extends React.Component {
 				this.sortMessages(resolve.data)
 					.then((sorted) => {
 						this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
-							nopost: false,
 							posts: sorted
 							//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
 						})
 					})
 			})
 			.catch(reject => {
-				console.log(reject)
-				this.setState({ nopost: true })
+				this.props.connError()
 			})
 	}
 
-	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } 
-	//round value to nearest thousand, add k suffix
-
+	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } //round value to nearest thousand, add k suffix
 	refresh() { this.fetchToComponent(); }
 
 	//callbacks from children
@@ -206,7 +267,7 @@ class MessageManager extends React.Component {
 			try {
 				resolve(((data)
 					.sort((a, b) => b.date - a.date))
-					.sort((a, b) => b.pinned - a.pinned));
+					.sort((a, b) => b.pinned - a.pinned))
 			} catch (err) { reject(err); }
 		})
 	}
@@ -214,45 +275,44 @@ class MessageManager extends React.Component {
 	render() { //TODO: implement workers
 		return (
 			<main>
-				{this.state.error.enable ? <div className='error noselect' aria-live='assertive'>
-					<button className='smallbtn' aria-label='Close Error Message' onClick={() => {
+				{this.state.error.enable ? <div className='error no_select' aria-live='assertive'>
+					<button className='small_btn' aria-label='Close Error Message' onClick={() => {
 						this.setState({ error: { enable: false, info: '' } })
 					}}><i className='fa fa-close' /></button><div>{this.state.error.info}</div>
 				</div> : false}
 
-				{this.state.report ? <Report id={this.state.reportid} callback={this.reportCallback} /> : false}
+				{this.state.report ? <Report id={this.state.report_id} callback={this.reportCallback} /> : false}
+				<div className='no_post no_select'>{this.state.posts.length < 1 ? <div>No posts yet today! Be the first to share something!</div> : false}</div>
 
-				<div className='message-container'>
-					{this.state.nopost ? <div className='nopost noselect'><span>No posts yet today! Be the first to share something!</span></div> : false}
-					{this.state.posts.map((data, index) => (
-						<div aria-live='polite' className={'message'} key={index} value={data.postID}>
-							<div className='content' value={this.state.debug ? data.id : null}>
-								{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
-								{data.content.toString() /* Rendering as toString() for xss reasons */}
-								{data.pinned ? false : //if a post is pinned it shouldn't be reportable
-									<button
-										title='Report this post?' aria-label='Report Post'
-										className='smallbtn reportbtn'
-										onClick={() => { this.setState({ report: true, reportid: data.id }) }}>
-										<i className='fa fa-flag' /></button>}</div>
-							<div className='sub-content'>
-								<div className='date noselect' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
-								<div className='vote' value={0}>
-									<button aria-label='Upvote Post' className='smallbtn vote-btn upvote-active noselect'
-										onClick={(upvoteevent) => {
-											sendData('vote', null, data.id, 'upvote')
-												.then(() => { this.fetchToComponent(); }) //refresh
-										}}><i className='fa fa-chevron-circle-up' /></button>
-									<span aria-label='Votes' className='vote-amount noselect' title={data.votes.total}>{this.round(data.votes.total)}</span>
-									<button aria-label='Downvote Post' className='smallbtn vote-btn downvote-active noselect'
-										onClick={(downvoteevent) => {
-											sendData('vote', null, data.id, 'downvote')
-												.then(() => { this.fetchToComponent(); }) //refresh
-										}}><i className='fa fa-chevron-circle-down' /></button>
-								</div>
+				<div className='message-container'> {this.state.posts.map((data, index) => (
+					<div aria-live='polite' className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>
+						<div className='content' value={this.state.debug ? data.id : null}>
+							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
+							{data.content.toString() /* Rendering as toString() for xss reasons */}
+							{data.pinned ? false : //if a post is pinned it shouldn't be reportable
+								<button
+									title='Report this post?' aria-label='Report Post'
+									className='small_btn report_btn'
+									onClick={() => { this.setState({ report: true, report_id: data.id }) }}>
+									<i className='fa fa-flag' /></button>}</div>
+						<div className='sub-content'>
+							<div className='date no_select' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
+							<div className='vote' value={0}>
+								<button aria-label='Upvote Post' className='small_btn vote-btn upvote-active no_select'
+									onClick={(upvote_event) => {
+										sendData('vote', null, data.id, 'upvote')
+											.then(() => { this.fetchToComponent(); }) //refresh
+									}}><i className='fa fa-chevron-circle-up' /></button>
+								<span aria-label='Votes' className='vote-amount no_select' title={data.votes.total}>{this.round(data.votes.total)}</span>
+								<button aria-label='Downvote Post' className='small_btn vote-btn downvote-active no_select'
+									onClick={(downvote_event) => {
+										sendData('vote', null, data.id, 'downvote')
+											.then(() => { this.fetchToComponent(); }) //refresh
+									}}><i className='fa fa-chevron-circle-down' /></button>
 							</div>
 						</div>
-					))}
+					</div>
+				))}
 				</div>
 
 
@@ -265,8 +325,6 @@ class MessageManager extends React.Component {
 
 //TODO: let user customize types of display to suit their needs:
 //compact mode, dark mode / themes in general (save in cookie)
-
-
 
 class UserText extends React.Component {
 	constructor(props) {
@@ -306,7 +364,7 @@ class UserText extends React.Component {
 
 	render() { //might restructure to be a form for accessibility
 		return (
-			<div className="chatstuffs" >
+			<div className="chat_stuffs" >
 				{this.state.disclaimer ?
 					<footer className='disclaimer'>
 						<span>{`Disclaimer: All posts you make are anonymous, as well as the posts you've interacted with.\nWe remove all posts at midnight (GMT).`}</span>
@@ -317,7 +375,7 @@ class UserText extends React.Component {
 						>Start Chatting!</button></footer> : false}
 
 				<div className='userArea'>
-					<textarea className="userInput noselect" placeholder="Share something!"
+					<textarea className="userInput no_select" placeholder="Share something!"
 						maxLength={this.var.maxLength} value={this.state.content}
 						aria-label='Message textbox. Press enter to send a message.'
 						onChange={(event) => { this.setState({ content: event.target.value, }); }}
@@ -327,7 +385,7 @@ class UserText extends React.Component {
 						disabled={this.state.content.trim().length >= 2 ? false : true}
 						style={this.state.content.trim().length >= 2 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
 						onClick={this.handleSend}><i className="fa fa-send" /></button>
-					{false && <canvas className='limit noselect' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
+					{false && <canvas className='limit no_select' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
 				</div>
 
 
@@ -351,14 +409,14 @@ class Report extends React.Component {
 
 	render() {
 		return (
-			<div className='report noselect'>
+			<div className='report no_select'>
 				<div className='report-title'>
 					<span>Report post?</span>
-					<button aria-label='Close Report Dialog' className='smallbtn' onClick={() => { this.close(); }}>
+					<button aria-label='Close Report Dialog' className='small_btn' onClick={() => { this.close(); }}>
 						<i className='fa fa-close' /></button>
 				</div>
 
-				<span className='noselect'>Please provide a reason for your report. (Max 400 characters)</span>
+				<span className='no_select'>Please provide a reason for your report. <i>(Between 10 and 400 characters)</i></span>
 				<textarea
 					aria-label='Report Dialog Textbox'
 					maxLength={400} autoFocus={true}
@@ -371,14 +429,12 @@ class Report extends React.Component {
 					<span>post id: {this.props.id}</span>
 					<button className='btn'
 						value={this.state.content}
+						disabled={this.state.content.trim().length >= 10 ? false : true}
+						style={this.state.content.trim().length >= 10 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
 						onClick={() => {
-							if (this.state.content.length >= 3) {
-								sendData('report', this.state.content, this.props.id)
-									.then(() => { this.close(); })
-									.catch((reject) => { console.log(reject) })
-							} else {
-								this.setState({ error: { enable: true, message: 'Please enter an appropriate report.' } })
-							}
+							sendData('report', this.state.content.trim(), this.props.id)
+								.then(() => { this.close(); })
+								.catch((reject) => { console.log(reject) })
 						}}
 					>Send report</button>
 				</div>

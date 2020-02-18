@@ -17,7 +17,7 @@ function token(length) { //generates a token of random characters of a specific 
 
 //VARIABLES
 var stdin = process.openStdin(); //opens the console
-var actP = [{ id: token(8), content: 'Sample Text', votes: { total: 12300, voters: [] }, date: Date.now(), pinned: true, }];
+var actP = []; //{ id: token(8), content: 'Sample Text', votes: { total: 12300, voters: [] }, date: Date.now(), pinned: true, }
 var actS = [];
 var verbose = process.argv.includes('-v') ? true : false; //if includes returns true then true is assigned to verbose, and vise versa.
 

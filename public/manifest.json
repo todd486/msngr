@@ -1,6 +1,6 @@
 {
   "short_name": "msngr",
-  "name": "Messaging app",
+  "name": "msngr: The people's messaging app",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,16 +8,13 @@
       "type": "image/x-icon"
     },
     {
-      
-    },
-    {
-      "src": "msngr_logo.svg",
-      "sizes": "512x512 256x256 128x128 64x64",
-      "type": "image/svg+xml"
+      "src": "logo_white_back.png",
+      "sizes": "512x512 192x192",
+      "type": "image/png"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#5ebcff",
   "background_color": "#ffffff"
 }
