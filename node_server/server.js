@@ -277,15 +277,12 @@ server.listen(port, hostname, () => {
         switch (buffer[0]) { //BUG: removes pinned posts instead of chosen post
             case 'rmp': { //remove post
                 exists(buffer[1])
-                    .then(index => { 
-                        console.log(`Removed post: ${JSON.stringify(actP[index].id)}`); 
-                        actP.splice(actP[index], 1) 
+                    .then((resolve) => { 
+                        console.log(`Removed post: ${JSON.stringify(actP[resolve].id)}`); 
+                        actP.splice(actP[resolve], 1) 
                     })
                     .catch(err => { console.log(err) })
                 break;
-            }
-            case 'mdp': { //modify post
-
             }
             case 'pin': { //pin post
                 exists(buffer[1])
@@ -295,9 +292,6 @@ server.listen(port, hostname, () => {
                     })
                     .catch(err => { console.log(err) })
                 break;
-            }
-            case 'ban': { //ban ip adress
-                
             }
             default: {
                 console.log('Invalid Command')

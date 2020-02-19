@@ -272,7 +272,7 @@ class MessageManager extends React.Component {
 		})
 	}
 	/* mapping the data with a key of {index}, display data.content */
-	render() { //TODO: implement workers
+	render() {
 		return (
 			<main>
 				{this.state.error.enable ? <div className='error no_select' aria-live='assertive'>
@@ -289,32 +289,33 @@ class MessageManager extends React.Component {
 						<div className='content' value={this.state.debug ? data.id : null}>
 							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
 							{data.content.toString() /* Rendering as toString() for xss reasons */}
-							{data.pinned ? false : //if a post is pinned it shouldn't be reportable
+							{!data.pinned ? //if a post is pinned it shouldn't be reportable
 								<button
 									title='Report this post?' aria-label='Report Post'
 									className='small_btn report_btn'
 									onClick={() => { this.setState({ report: true, report_id: data.id }) }}>
-									<i className='fa fa-flag' /></button>}</div>
+									<i className='fa fa-flag' /></button> : false}</div>
 						<div className='sub-content'>
 							<div className='date no_select' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
 							<div className='vote' value={0}>
 								<button aria-label='Upvote Post' className='small_btn vote-btn upvote-active no_select'
 									onClick={(upvote_event) => {
 										sendData('vote', null, data.id, 'upvote')
-											.then(() => { this.fetchToComponent(); }) //refresh
+											.then(() => { this.fetchToComponent(); })
+											.catch((err) => { console.log(err); })
 									}}><i className='fa fa-chevron-circle-up' /></button>
 								<span aria-label='Votes' className='vote-amount no_select' title={data.votes.total}>{this.round(data.votes.total)}</span>
 								<button aria-label='Downvote Post' className='small_btn vote-btn downvote-active no_select'
 									onClick={(downvote_event) => {
 										sendData('vote', null, data.id, 'downvote')
-											.then(() => { this.fetchToComponent(); }) //refresh
+											.then(() => { this.fetchToComponent(); })
+											.catch((err) => { console.log(err); })
 									}}><i className='fa fa-chevron-circle-down' /></button>
 							</div>
 						</div>
 					</div>
 				))}
 				</div>
-
 
 				<UserText callback={this.messageCallback} />
 
@@ -330,8 +331,10 @@ class UserText extends React.Component {
 	constructor(props) {
 		super(props);
 		this.handleSend = this.handleSend.bind(this);
+		this.canvasRef = React.createRef();
 		this.var = {
-			maxLength: 128
+			maxLength: 128,
+			progress: 0,
 		}
 		this.state = {
 			content: '',
@@ -339,7 +342,22 @@ class UserText extends React.Component {
 		}
 	}
 
-	//TODO: 
+	componentDidMount() { this.draw(); }
+
+	draw() { //DOESN'T wanna redraw grrrrr
+		const canvas = this.canvasRef.current;
+		const ctx = canvas.getContext('2d');
+		const width = canvas.width;
+    	const height = canvas.height;
+
+		console.log('redrawing')
+		ctx.beginPath();
+		ctx.clearRect(0,0, width, height);
+		ctx.strokeStyle = '#5ebcff'; ctx.lineWidth = 4;
+		//x, y, radius, sAngle, eAngle, counterClockwise
+		ctx.arc(width / 2, height / 2, width / 2.5, (this.var.progress) * Math.PI, 0);
+		ctx.restore();
+	}
 
 	async handleSend() {
 		const content = this.state.content;
@@ -378,18 +396,18 @@ class UserText extends React.Component {
 					<textarea className="userInput no_select" placeholder="Share something!"
 						maxLength={this.var.maxLength} value={this.state.content}
 						aria-label='Message textbox. Press enter to send a message.'
-						onChange={(event) => { this.setState({ content: event.target.value, }); }}
+						onChange={(event) => {
+							this.setState({ content: event.target.value, progress: (this.state.content.length / this.var.maxLength) * 2 });
+							this.draw();
+						}}
 						onKeyDown={this.onEnterPress} />
 
 					<button aria-label='Send Message' className='send-message btn send'
 						disabled={this.state.content.trim().length >= 2 ? false : true}
 						style={this.state.content.trim().length >= 2 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
 						onClick={this.handleSend}><i className="fa fa-send" /></button>
-					{false && <canvas className='limit no_select' width={20} height={20}></canvas> /*TODO: implement limit graphic*/}
+					<canvas ref={this.canvasRef} className='limit no_select' width={20} height={20}></canvas>
 				</div>
-
-
-
 			</div>
 		)
 	}
