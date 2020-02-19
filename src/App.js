@@ -284,8 +284,8 @@ class MessageManager extends React.Component {
 				{this.state.report ? <Report id={this.state.report_id} callback={this.reportCallback} /> : false}
 				<div className='no_post no_select'>{this.state.posts.length < 1 ? <div>No posts yet today! Be the first to share something!</div> : false}</div>
 
-				<div className='message-container'> {this.state.posts.map((data, index) => (
-					<div aria-live='polite' className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>
+				<div className='message-container' aria-live='polite'> {this.state.posts.map((data, index) => (
+					<div className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>
 						<div className='content' value={this.state.debug ? data.id : null}>
 							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
 							{data.content.toString() /* Rendering as toString() for xss reasons */}
@@ -334,11 +334,11 @@ class UserText extends React.Component {
 		this.canvasRef = React.createRef();
 		this.var = {
 			maxLength: 128,
-			progress: 0,
 		}
 		this.state = {
 			content: '',
 			disclaimer: true,
+			progress: 0,
 		}
 	}
 
@@ -348,15 +348,16 @@ class UserText extends React.Component {
 		const canvas = this.canvasRef.current;
 		const ctx = canvas.getContext('2d');
 		const width = canvas.width;
-    	const height = canvas.height;
+		const height = canvas.height;
 
-		console.log('redrawing')
+		//Define Styles
+		ctx.strokeStyle = '#5ebcff'; ctx.lineWidth = 4; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowOffsetX = '2px'; ctx.shadowBlur = '2';
+
 		ctx.beginPath();
-		ctx.clearRect(0,0, width, height);
-		ctx.strokeStyle = '#5ebcff'; ctx.lineWidth = 4;
+		ctx.clearRect(0, 0, width, height);
 		//x, y, radius, sAngle, eAngle, counterClockwise
-		ctx.arc(width / 2, height / 2, width / 2.5, (this.var.progress) * Math.PI, 0);
-		ctx.restore();
+		ctx.arc(width / 2, height / 2, width / 2.5, (this.state.progress) * Math.PI, 2 * Math.PI);
+		ctx.stroke();
 	}
 
 	async handleSend() {
@@ -376,6 +377,7 @@ class UserText extends React.Component {
 		} else { //show error
 			this.props.callback(2);
 		}
+		this.draw();
 	}
 
 	onEnterPress = (e) => { if (e.keyCode === 13 && e.shiftKey === false) { e.preventDefault(); this.handleSend(); } }
@@ -400,13 +402,19 @@ class UserText extends React.Component {
 							this.setState({ content: event.target.value, progress: (this.state.content.length / this.var.maxLength) * 2 });
 							this.draw();
 						}}
+
 						onKeyDown={this.onEnterPress} />
 
 					<button aria-label='Send Message' className='send-message btn send'
 						disabled={this.state.content.trim().length >= 2 ? false : true}
 						style={this.state.content.trim().length >= 2 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
 						onClick={this.handleSend}><i className="fa fa-send" /></button>
-					<canvas ref={this.canvasRef} className='limit no_select' width={20} height={20}></canvas>
+
+					<span className='limit'>
+						<canvas ref={this.canvasRef} className='no_select' width={20} height={20}></canvas>
+						<span>{this.var.maxLength - this.state.content.length}</span>
+					</span>
+
 				</div>
 			</div>
 		)
