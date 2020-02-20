@@ -18,6 +18,8 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
     });
     req.setEncoding('utf8');
 
+    this.timer = setInterval(() => refresh(), 5000); //set an interval to call refresh every 5 seconds
+
     function refresh() { //define what should occur during each refresh
         actS.forEach((item, index, object) => {
             if (Math.abs(item.lastAct - Date.now()) > 1e6) /* each token expires after 1e6 milliseconds ~~~ 16,7 minutes */ {
@@ -34,42 +36,42 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         })
     };
 
-    function sessionCheck() {
-        let success = false;
-        function timeCheck(query) {
-            switch (query) {
-                case 'init': {
-                    console.log(`[INFO] New user found! Initialized user with IP adress: ${req.socket.localAddress}`);
-                    actS.push({ //push a new session into memory
-                        id: token(8),
-                        ip: req.socket.localAddress,
-                        lastAct: new Date(Date.now()),
-                    });
-                    break;
-                }
-                case 'update': {
-                    actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now();
-                    break;
-                }
-                default: {
-                    console.log(`[WARN] Default in timeCheck().`)
-                }
-            }
-        };
-        try { //check if last action was less than 500 ms ago
-            if (actS.find(x => x.ip === req.socket.localAddress) === undefined) { timeCheck('init'); } //check if the user exists
-            if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct - Date.now()) < 500) {
-                res.statusCode = 403; //Forbidden
-                res.end();
-                throw new Error(`User requested to quickly!`);
-            } else { success = true; }
-        } catch (err) {
-            console.log(`[WARN] Exception caught in sessionCheck(). ${err}`)
-        } finally { //if exception is caught, timeCheck() should run and should cause the try statement to succeed
-            timeCheck('update');
-            return success;
-        }
-    };
+    // function sessionCheck() {
+    //     let success = false;
+    //     function timeCheck(query) {
+    //         switch (query) {
+    //             case 'init': {
+    //                 console.log(`[INFO] New user found! Initialized user with IP adress: ${req.socket.localAddress}`);
+    //                 actS.push({ //push a new session into memory
+    //                     id: token(8),
+    //                     ip: req.socket.localAddress,
+    //                     lastAct: new Date(Date.now()),
+    //                 });
+    //                 break;
+    //             }
+    //             case 'update': {
+    //                 actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct = Date.now();
+    //                 break;
+    //             }
+    //             default: {
+    //                 console.log(`[WARN] Default in timeCheck().`)
+    //             }
+    //         }
+    //     };
+    //     try { //check if last action was less than 500 ms ago
+    //         if (actS.find(x => x.ip === req.socket.localAddress) === undefined) { timeCheck('init'); } //check if the user exists
+    //         if (Math.abs(actS[actS.findIndex(x => x.ip === req.socket.localAddress)].lastAct - Date.now()) < 500) {
+    //             res.statusCode = 403; //Forbidden
+    //             res.end();
+    //             throw new Error(`User requested to quickly!`);
+    //         } else { success = true; }
+    //     } catch (err) {
+    //         console.log(`[WARN] Exception caught in sessionCheck(). ${err}`)
+    //     } finally { //if exception is caught, timeCheck() should run and should cause the try statement to succeed
+    //         timeCheck('update');
+    //         return success;
+    //     }
+    // };
 
     function vote(query, id) {
         function apply() {
@@ -118,90 +120,92 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
 
     const { q = undefined, v = undefined, id = undefined } = req.query; //queries from user
 
-    if (sessionCheck()) {
-        switch (req.method) {
-            case 'GET': {
-                switch (q) { //using switch statement for further expandablity
-                    case 'posts': { res.write(JSON.stringify(actP)); res.end(); }
-                    default: { res.statusCode = 404; res.end(); } /* Not Found */
-                }
+    switch (req.method) {
+        case 'GET': {
+            switch (q) { //using switch statement for further expandablity
+                case 'posts': { res.write(JSON.stringify(actP)); res.end(); }
+                default: { res.statusCode = 404; res.end(); } /* Not Found */
             }
-            case 'POST': {
-                function handleData() {
-                    return new Promise((resolve, reject) => {
-                        let body = ''; //create temporary value to store body
-                        req.on('data', (chunk) => {
-                            if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                                console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
-                                req.statusCode = 413; //Request too large
-                                req.connection.destroy();
-                                reject();
-                            } else { //else add the chunk to body
-                                body += chunk;
-                            }
-                            req.statusCode = 201; //Accepted
-                            let parsedBody = JSON.parse(body); //parse the transfer stringified json
-                            resolve(parsedBody.data);
-                        });
-                    })
+        }
+        case 'POST': {
+            function handleData() {
+                return new Promise((resolve, reject) => {
+                    let body = ''; //create temporary value to store body
+                    req.on('data', (chunk) => {
+                        if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                            console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
+                            req.statusCode = 413; //Request too large
+                            req.connection.destroy();
+                            reject();
+                        } else { //else add the chunk to body
+                            body += chunk;
+                        }
+                        req.statusCode = 201; //Accepted
+                        let parsedBody = JSON.parse(body); //parse the transfer stringified json
+                        resolve(parsedBody.data);
+                    });
+                })
+            }
+            switch (q) {
+                case 'post': {
+                    handleData()
+                        .then(resolve => {
+                            let formattedPost = { //Generate the additional data relevant to post
+                                id: token(8),
+                                content: resolve,
+                                votes: { total: 0, voters: [] },
+                                date: Date.now(),
+                                pinned: false,
+                            };
+                            actP.push(formattedPost);
+                        })
+                        .catch((reject) => {
+                            req.statusCode = 500;
+                            console.log(`[WARN] Exception in post data handling: ${reject}`)
+                        }) //Internal server error
+                        res.end();
+                    break;
                 }
-                switch (q) {
-                    case 'post': {
+                case 'vote': {
+                    if (actP.find(x => x.id === id)) {
+                        vote(v, id)
+                            .then(() => { res.end(); })
+                            .catch((reject) => { res.end();
+                                console.log(`[WARN] Rejected vote query. ${reject}`)
+                            })
+
+                    } else { req.statusCode = 400; //Bad Request
+                        console.log(`[WARN]$ User requested to vote on non-existant post.`);
+                    }
+                    break;
+                }
+                case 'report': {
+                    if (actP.find(x => x.id === id)) {
                         handleData()
-                            .then(resolve => {
-                                let formattedPost = { //Generate the additional data relevant to post
-                                    id: token(8),
-                                    content: resolve,
-                                    votes: { total: 0, voters: [] },
-                                    date: Date.now(),
-                                    pinned: false,
-                                };
-                                actP.push(formattedPost);
+                            .then((resolve) => {
+                                console.log(`[REPORT] ${JSON.stringify(actP[actP.findIndex(x => x.id === id)].id)} Reason: "${resolve}" `)
                             })
                             .catch((reject) => {
-                                req.statusCode = 500;
-                                console.log(`[WARN] Exception in post data handling: ${reject}`)
-                            }) //Internal server error
-                            res.end();
-                        break;
+                                req.statusCode = 500; //Internal server error
+                                console.log(`[WARN] Exception in report data handling: ${reject}`)
+                            })
+                    } else {
+                        req.statusCode = 400; //Bad Request
+                        console.log(`[WARN] User requested to report non-existant post.`);
                     }
-                    case 'vote': {
-                        if (actP.find(x => x.id === id)) {
-                            vote(v, id)
-                                .then(() => { res.end(); })
-                                .catch((reject) => { res.end();
-                                    console.log(`[WARN] Rejected vote query. ${reject}`)
-                                })
+                    break;
+                }
+                default: {
 
-                        } else { req.statusCode = 400; //Bad Request
-                            console.log(`[WARN]$ User requested to vote on non-existant post.`);
-                        }
-                        break;
-                    }
-                    case 'report': {
-                        if (actP.find(x => x.id === id)) {
-                            handleData()
-                                .then((resolve) => {
-                                    console.log(`[REPORT] ${JSON.stringify(actP[actP.findIndex(x => x.id === id)].id)} Reason: "${resolve}" `)
-                                })
-                                .catch((reject) => {
-                                    req.statusCode = 500; //Internal server error
-                                    console.log(`[WARN] Exception in report data handling: ${reject}`)
-                                })
-                        } else {
-                            req.statusCode = 400; //Bad Request
-                            console.log(`[WARN] User requested to report non-existant post.`);
-                        }
-                        break;
-                    }
-                    default: {
-
-                    }
                 }
             }
-            default: { res.statusCode = 405; res.end(); } //Method Not Supported
         }
-    } else { res.statusCode = 401; res.end(); } //Forbidden
+        default: { res.statusCode = 405; res.end(); } //Method Not Supported
+    }
+
+    // if (sessionCheck()) {
+        
+    // } else { res.statusCode = 401; res.end(); } //Forbidden
 
     res.end();
 }
