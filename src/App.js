@@ -265,13 +265,8 @@ class MessageManager extends React.Component {
 	sortMessages(data) {
 		return new Promise((resolve, reject) => {
 			try {
-				resolve((data)
-					.sort((a, b) => b.date - a.date)
-					.sort((a, b) => b.pinned - a.pinned)
-				);
-				// resolve(((data)
-				// 	.sort((a, b) => b.date - a.date))
-				// 	.sort((a, b) => b.pinned - a.pinned))
+				let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
+				resolve(sortedData);
 			} catch (err) { reject(err); }
 		})
 	}
