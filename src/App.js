@@ -344,7 +344,7 @@ class UserText extends React.Component {
 
 	componentDidMount() { this.draw(); }
 
-	draw() { //DOESN'T wanna redraw grrrrr
+	draw() {
 		const canvas = this.canvasRef.current;
 		const ctx = canvas.getContext('2d');
 		const width = canvas.width;
