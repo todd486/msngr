@@ -7,7 +7,11 @@ async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`https://msngr.now.sh/api/server.ts?q=posts`)
 			.then((response) => {
-				resolve(response);
+				if (response.length === 0) {
+					resolve([]);
+				} else {
+					resolve(response);
+				}
 			})
 			.catch((error) => {
 				reject(error);
@@ -219,28 +223,26 @@ class MessageManager extends React.Component {
 	}
 	componentWillUnmount() { clearInterval(this.timer); };
 
-	fetchToComponent() {
-		fetchData() //promise based fetching
+	async fetchToComponent() {
+		await fetchData() //promise based fetching
 			.then((resolve) => {
-				function sortMessages(data) {
-					return new Promise((resolve, reject) => {
-						let sortedData = [data];
-						sortedData.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
-						resolve(sortedData);
-					})
-				}
-
-				sortMessages(resolve.data)
-					.then((sorted) => {
-						this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
-							posts: sorted
-							//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
-						})
-					})
+				this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
+					posts: resolve
+					//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
+				})
+				// function sortMessages(data) {
+				// 	return new Promise((resolve, reject) => {
+				// 		if (data.length === 0) {
+				// 			resolve([]); //resolve an empty array
+				// 		} else {
+				// 			let sortedData = data;
+				// 			sortedData.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
+				// 			resolve(sortedData); //else resolve the sorted data
+				// 		}
+				// 	})
+				// }				
 			})
-			.catch(reject => {
-				this.props.connError()
-			})
+			.catch(() => { this.props.connError() })
 	}
 
 	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } //round value to nearest thousand, add k suffix
@@ -282,7 +284,7 @@ class MessageManager extends React.Component {
 				</div> : false}
 
 				{this.state.report ? <Report id={this.state.report_id} callback={this.reportCallback} /> : false}
-				<div className='no_post no_select'>{this.state.posts.length < 1 ? <div>No posts yet today! Be the first to share something!</div> : false}</div>
+				<div className='no_post no_select'>{this.state.posts.length <= 0 ? <div>No posts yet today! Be the first to share something!</div> : false}</div>
 
 				<div className='message-container' aria-live='polite'> {this.state.posts.map((data, index) => (
 					<div className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>

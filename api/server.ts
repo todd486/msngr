@@ -202,7 +202,5 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         }
     } else { res.statusCode = 401; res.end(); } //Forbidden
 
-    req.once('end', () => {
-        req.connection.destroy(); //destroy connection if user requests it
-    })
+    res.end();
 }
