@@ -7,11 +7,7 @@ async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`https://msngr.now.sh/api/server.ts?q=posts`)
 			.then((response) => {
-				if (response.length === 0) {
-					resolve([]);
-				} else {
-					resolve(response);
-				}
+				resolve(response);
 			})
 			.catch((error) => {
 				reject(error);
@@ -226,21 +222,23 @@ class MessageManager extends React.Component {
 	async fetchToComponent() {
 		await fetchData() //promise based fetching
 			.then((resolve) => {
-				this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
-					posts: resolve
-					//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
+				function sortedPosts(input) {
+					return input
+						.sort((a, b) => b.date - a.date)
+						.sort((a, b) => b.pinned - a.pinned);
+				}
+				if (resolve.data.length <= 0) { this.setState({ posts: [] }) } 
+				else {
+					this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
+						posts: resolve.data
+						//posts: this.state.posts.concat(resolve.data) | note to self: push bad, concat good
+					})
+				}
+				this.setState({
+					posts: sortedPosts(this.state.posts)
 				})
-				// function sortMessages(data) {
-				// 	return new Promise((resolve, reject) => {
-				// 		if (data.length === 0) {
-				// 			resolve([]); //resolve an empty array
-				// 		} else {
-				// 			let sortedData = data;
-				// 			sortedData.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
-				// 			resolve(sortedData); //else resolve the sorted data
-				// 		}
-				// 	})
-				// }				
+
+
 			})
 			.catch(() => { this.props.connError() })
 	}
@@ -272,7 +270,7 @@ class MessageManager extends React.Component {
 		}
 	}
 
-	
+
 	/* mapping the data with a key of {index}, display data.content */
 	render() {
 		return (

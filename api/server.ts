@@ -122,7 +122,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         switch (req.method) {
             case 'GET': {
                 switch (q) { //using switch statement for further expandablity
-                    case 'posts': { res.write(JSON.stringify(actP)); }
+                    case 'posts': { res.write(JSON.stringify(actP)); res.end(); }
                     default: { res.statusCode = 404; res.end(); } /* Not Found */
                 }
             }
@@ -162,6 +162,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                                 req.statusCode = 500;
                                 console.log(`[WARN] Exception in post data handling: ${reject}`)
                             }) //Internal server error
+                            res.end();
                         break;
                     }
                     case 'vote': {
