@@ -224,7 +224,7 @@ class MessageManager extends React.Component {
 			.then((resolve) => {
 				function sortMessages(data) {
 					return new Promise((resolve, reject) => {
-						let sortedData = data;
+						let sortedData = JSON.parse(data);
 						sortedData.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned);
 						resolve(sortedData);
 					})
