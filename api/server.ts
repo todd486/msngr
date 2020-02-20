@@ -11,7 +11,7 @@ var actS = [];
 
 export default (req: now.NowRequest, res: now.NowResponse) => {
     res.writeHead(200, { //write header with status 200, allow CORS and set encoding type
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://msngr.now.sh/',
         'Content-Type': 'application/json',
         'Connection': 'Keep-Alive',
         'Keep-Alive': 'Timeout=5, max=1000' //Keepalive connection for 5 seconds with a max of 1000 requests per connection

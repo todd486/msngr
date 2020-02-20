@@ -9,7 +9,7 @@ async function fetchData() {
 	return new Promise((resolve, reject) => {
 		axios.get(`https://${adress}?q=posts`)
 			.then((response) => {
-				resolve(response)
+				resolve(response);
 			})
 			.catch((error) => {
 				reject(error);
