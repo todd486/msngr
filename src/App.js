@@ -3,9 +3,11 @@ import './App.css';
 import './fontawesome.css';
 import axios from 'axios';
 
+const adress = 'msngr_server.now.sh';
+
 async function fetchData() {
 	return new Promise((resolve, reject) => {
-		axios.get(`http://localhost:8080?q=posts`)
+		axios.get(`https://${adress}?q=posts`)
 			.then((response) => {
 				resolve(response)
 			})
@@ -18,7 +20,7 @@ async function sendData(query, data, id, action) {
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
-				axios.post(`http://localhost:8080?q=${query}`, JSON.stringify({ data }))
+				axios.post(`https://${adress}?q=${query}`, JSON.stringify({ data }))
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
 							resolve();
@@ -32,7 +34,7 @@ async function sendData(query, data, id, action) {
 		case 'vote': {
 			return new Promise((resolve, reject) => {
 				//TODO: send post id as well as user id in query as data. verify user id server side
-				axios.post(`http://localhost:8080?q=${query}?id=${id}?v=${action}`)
+				axios.post(`https://${adress}?q=${query}?id=${id}?v=${action}`)
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
 							resolve();
@@ -45,7 +47,7 @@ async function sendData(query, data, id, action) {
 		}
 		case 'report': {
 			return new Promise((resolve, reject) => {
-				axios.post(`http://localhost:8080?q=${query}?id=${id}`, JSON.stringify({ data }))
+				axios.post(`https://${adress}?q=${query}?id=${id}`, JSON.stringify({ data }))
 					.then(response => {
 						if (response.status === 200) { //check if a status of 200 was returned on POST
 							resolve();
