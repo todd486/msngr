@@ -3,7 +3,7 @@ import './App.css';
 import './fontawesome.css';
 import axios from 'axios';
 
-const adress = 'msngr_server.now.sh';
+const adress = 'msngr.now.sh/api/server.ts';
 
 async function fetchData() {
 	return new Promise((resolve, reject) => {
