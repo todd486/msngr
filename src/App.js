@@ -222,7 +222,14 @@ class MessageManager extends React.Component {
 	fetchToComponent() {
 		fetchData() //promise based fetching
 			.then((resolve) => {
-				this.sortMessages(resolve.data)
+				function sortMessages() {
+					return new Promise((resolve, reject) => {
+						let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
+						resolve(sortedData);
+					})
+				}
+
+				sortMessages(resolve.data)
 					.then((sorted) => {
 						this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
 							posts: sorted
@@ -233,6 +240,15 @@ class MessageManager extends React.Component {
 			.catch(reject => {
 				this.props.connError()
 			})
+	}
+
+	sortMessages(data) {
+		return new Promise((resolve, reject) => {
+			try {
+				let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
+				resolve(sortedData);
+			} catch (err) { reject(err); }
+		})
 	}
 
 	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } //round value to nearest thousand, add k suffix
@@ -262,14 +278,7 @@ class MessageManager extends React.Component {
 		}
 	}
 
-	sortMessages(data) {
-		return new Promise((resolve, reject) => {
-			try {
-				let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
-				resolve(sortedData);
-			} catch (err) { reject(err); }
-		})
-	}
+	
 	/* mapping the data with a key of {index}, display data.content */
 	render() {
 		return (
