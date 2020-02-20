@@ -351,7 +351,7 @@ class UserText extends React.Component {
 		const height = canvas.height;
 
 		//Define Styles
-		ctx.strokeStyle = '#5ebcff'; ctx.lineWidth = 4; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowOffsetX = '2px'; ctx.shadowBlur = '2';
+		ctx.strokeStyle = '#5ebcff'; ctx.lineWidth = 4;
 
 		ctx.beginPath();
 		ctx.clearRect(0, 0, width, height);
