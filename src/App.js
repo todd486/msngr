@@ -222,7 +222,7 @@ class MessageManager extends React.Component {
 	fetchToComponent() {
 		fetchData() //promise based fetching
 			.then((resolve) => {
-				function sortMessages() {
+				function sortMessages(data) {
 					return new Promise((resolve, reject) => {
 						let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
 						resolve(sortedData);
@@ -240,15 +240,6 @@ class MessageManager extends React.Component {
 			.catch(reject => {
 				this.props.connError()
 			})
-	}
-
-	sortMessages(data) {
-		return new Promise((resolve, reject) => {
-			try {
-				let sortedData = data.sort((a, b) => b.date - a.date).sort((a, b) => b.pinned - a.pinned)
-				resolve(sortedData);
-			} catch (err) { reject(err); }
-		})
 	}
 
 	round(x) { return Math.abs(x) > 999 ? Math.sign(x) * ((Math.abs(x) / 1000).toFixed(1)) + 'k' : Math.sign(x) * Math.abs(x) } //round value to nearest thousand, add k suffix
