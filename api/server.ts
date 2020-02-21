@@ -1,4 +1,4 @@
-import now from '@now/node';
+import * as now from '@now/node';
 
 var actP = [];
 
@@ -18,35 +18,39 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         return output;
     }
 
+    function handleData() {
+        return new Promise((resolve, reject) => {
+            let body: string; //create temporary value to store body
+            req.on('data', (chunk) => {
+                if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                    console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
+                    req.statusCode = 413; //Request too large
+                    req.connection.destroy();
+                    reject();
+                } else { body += chunk; } //else add the chunk to body
+                try {
+                    req.statusCode = 201; //Accepted
+                    let parsedBody = JSON.parse(body); //parse the transfer stringified json
+                    resolve(parsedBody.data);
+                } catch (err) {
+                    req.statusCode = 500; //Internal server error
+                    reject();
+                }
+            });
+        })
+    }
+
     const { q = undefined, v = undefined, id = undefined } = req.query; //queries from user
 
     switch (req.method) {
         case 'GET': {
             switch (q) { //using switch statement for further expandability
-                case 'posts': { res.write(JSON.stringify(actP)); res.end(); }
-                default: { res.statusCode = 404; res.end(); } /* Not Found */
+                case 'posts': { res.write(JSON.stringify(actP)); break; }
+                default: { res.statusCode = 404; } /* Not Found */
             }
             break;
         }
         case 'POST': {
-            function handleData() {
-                return new Promise((resolve, reject) => {
-                    let body: string; //create temporary value to store body
-                    req.on('data', (chunk) => {
-                        if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                            console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
-                            req.statusCode = 413; //Request too large
-                            req.connection.destroy();
-                            reject();
-                        } else { //else add the chunk to body
-                            body += chunk;
-                        }
-                        req.statusCode = 201; //Accepted
-                        let parsedBody = JSON.parse(body); //parse the transfer stringified json
-                        resolve(parsedBody.data);
-                    });
-                })
-            }
             switch (q) {
                 case 'post': {
                     handleData()
@@ -54,25 +58,20 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                             let formattedPost = { //Generate the additional data relevant to post
                                 id: token(8),
                                 content: resolve,
-                                votes: { total: 0, voters: [] },
                                 date: Date.now(),
-                                pinned: false,
                             };
                             actP.push(formattedPost);
                         })
                         .catch((reject) => {
-                            req.statusCode = 500;
-                            console.log(`[WARN] Exception in post data handling: ${reject}`)
-                        }) //Internal server error
-                        res.end();
+                            res.end(reject);
+                        })
                     break;
                 }
-                default: { res.statusCode = 401; res.end(); 
-                } //Bad Request
+                default: { res.statusCode = 401; } //Bad Request
             }
             break;
         }
-        default: { res.statusCode = 405; res.end(); } //Method Not Supported
+        default: { res.statusCode = 405; } //Method Not Supported
     }
     res.end();
 }

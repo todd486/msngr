@@ -29,33 +29,6 @@ async function sendData(query, data, id, action) {
 					})
 			})
 		}
-		case 'vote': {
-			return new Promise((resolve, reject) => {
-				//TODO: send post id as well as user id in query as data. verify user id server side
-				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}?id=${id}?v=${action}`)
-					.then(response => {
-						if (response.status === 200) { //check if a status of 200 was returned on POST
-							resolve();
-						} else { reject(response); }
-					})
-					.catch(error => {
-						reject(error)
-					})
-			})
-		}
-		case 'report': {
-			return new Promise((resolve, reject) => {
-				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}?id=${id}`, JSON.stringify({ data }))
-					.then(response => {
-						if (response.status === 200) { //check if a status of 200 was returned on POST
-							resolve();
-						} else { reject(response); }
-					})
-					.catch(error => {
-						reject(error)
-					})
-			})
-		}
 		default: { console.log('malformed internal post request') }
 	}
 }
@@ -221,8 +194,7 @@ class MessageManager extends React.Component {
 			.then((resolve) => {
 				function sortedPosts(input) {
 					return input
-						.sort((a, b) => b.date - a.date)
-						.sort((a, b) => b.pinned - a.pinned);
+						.sort((a, b) => b.date - a.date);
 				}
 				if (resolve.data.length <= 0) { this.setState({ posts: [] }) }
 				else {
