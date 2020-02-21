@@ -204,10 +204,7 @@ class MessageManager extends React.Component {
 		this.voteCallback = this.voteCallback.bind(this);
 		this.state = {
 			settings: this.props.settings,
-			report_id: undefined,
-			report: false,
 			posts: [],
-			debug: true,
 			error: { enable: false, info: "You're a curious one, you're not supposed to see this!" }
 		}
 		//maybe let user configure how many posts to allow at once, since it may decrease performance
@@ -227,7 +224,7 @@ class MessageManager extends React.Component {
 						.sort((a, b) => b.date - a.date)
 						.sort((a, b) => b.pinned - a.pinned);
 				}
-				if (resolve.data.length <= 0) { this.setState({ posts: [] }) } 
+				if (resolve.data.length <= 0) { this.setState({ posts: [] }) }
 				else {
 					this.setState({ //store the resolved posts in posts state, then sort for date, then pinned status
 						posts: resolve.data
@@ -275,13 +272,6 @@ class MessageManager extends React.Component {
 	render() {
 		return (
 			<main>
-				{this.state.error.enable ? <div className='error no_select' aria-live='assertive'>
-					<button className='small_btn' aria-label='Close Error Message' onClick={() => {
-						this.setState({ error: { enable: false, info: '' } })
-					}}><i className='fa fa-close' /></button><div>{this.state.error.info}</div>
-				</div> : false}
-
-				{this.state.report ? <Report id={this.state.report_id} callback={this.reportCallback} /> : false}
 				<div className='no_post no_select'>{this.state.posts.length <= 0 ? <div>No posts yet today! Be the first to share something!</div> : false}</div>
 
 				<div className='message-container' aria-live='polite'> {this.state.posts.map((data, index) => (
@@ -289,28 +279,9 @@ class MessageManager extends React.Component {
 						<div className='content' value={this.state.debug ? data.id : null}>
 							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
 							{data.content.toString() /* Rendering as toString() for xss reasons */}
-							{!data.pinned ? //if a post is pinned it shouldn't be reportable
-								<button
-									title='Report this post?' aria-label='Report Post'
-									className='small_btn report_btn'
-									onClick={() => { this.setState({ report: true, report_id: data.id }) }}>
-									<i className='fa fa-flag' /></button> : false}</div>
-						<div className='sub-content'>
-							<div className='date no_select' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
-							<div className='vote' value={0}>
-								<button aria-label='Upvote Post' className='small_btn vote-btn upvote-active no_select'
-									onClick={(upvote_event) => {
-										sendData('vote', null, data.id, 'upvote')
-											.then(() => { this.fetchToComponent(); })
-											.catch((err) => { console.log(err); })
-									}}><i className='fa fa-chevron-circle-up' /></button>
-								<span aria-label='Votes' className='vote-amount no_select' title={data.votes.total}>{this.round(data.votes.total)}</span>
-								<button aria-label='Downvote Post' className='small_btn vote-btn downvote-active no_select'
-									onClick={(downvote_event) => {
-										sendData('vote', null, data.id, 'downvote')
-											.then(() => { this.fetchToComponent(); })
-											.catch((err) => { console.log(err); })
-									}}><i className='fa fa-chevron-circle-down' /></button>
+
+							<div className='sub-content'>
+								<div className='date no_select' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
 							</div>
 						</div>
 					</div>
@@ -415,54 +386,6 @@ class UserText extends React.Component {
 						<span>{this.var.maxLength - this.state.content.length}</span>
 					</span>
 
-				</div>
-			</div>
-		)
-	}
-}
-
-class Report extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			content: '',
-			error: { enable: false, message: '' }
-		}
-	}
-
-	close() { this.props.callback(); }
-	componentWillUnmount() { this.setState({ content: '' }); }
-
-	render() {
-		return (
-			<div className='report no_select'>
-				<div className='report-title'>
-					<span>Report post?</span>
-					<button aria-label='Close Report Dialog' className='small_btn' onClick={() => { this.close(); }}>
-						<i className='fa fa-close' /></button>
-				</div>
-
-				<span className='no_select'>Please provide a reason for your report. <i>(Between 10 and 400 characters)</i></span>
-				<textarea
-					aria-label='Report Dialog Textbox'
-					maxLength={400} autoFocus={true}
-					onChange={(event) => { this.setState({ content: event.target.value }); }}
-				/>
-				<div className='report-footer'>
-					{this.state.error.enable ? <span>
-						{this.state.error.message}
-					</span> : false}
-					<span>post id: {this.props.id}</span>
-					<button className='btn'
-						value={this.state.content}
-						disabled={this.state.content.trim().length >= 10 ? false : true}
-						style={this.state.content.trim().length >= 10 ? { backgroundColor: '#5ebcff' } : { backgroundColor: '#d3d3d3' }}
-						onClick={() => {
-							sendData('report', this.state.content.trim(), this.props.id)
-								.then(() => { this.close(); })
-								.catch((reject) => { console.log(reject) })
-						}}
-					>Send report</button>
 				</div>
 			</div>
 		)
