@@ -249,7 +249,7 @@ class MessageManager extends React.Component {
 					<div className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>
 						<div className='content' value={this.state.debug ? data.id : null}>
 							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
-							{data.content.toString() /* Rendering as toString() for xss reasons */}
+							{data.content}
 
 							<div className='sub-content'>
 								<div className='date no_select' title={new Date(data.date).toUTCString()}>{new Date(data.date).toLocaleTimeString()}</div>
