@@ -14,18 +14,17 @@ async function fetchData() {
 			})
 	})
 }
-async function sendData(query, data, id, action) {
+async function sendData(query, data) {
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
+				console.log(data);
 				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}`, JSON.stringify({ data }))
 					.then(response => {
-						if (response.status === 200) { //check if a status of 200 was returned on POST
-							resolve();
-						} else { reject(response); }
+						resolve(response);
 					})
 					.catch(error => {
-						console.log(error)
+						reject(error);
 					})
 			})
 		}

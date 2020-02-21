@@ -28,19 +28,15 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                     req.connection.destroy();
                     reject();
                 } else { body += chunk; } //else add the chunk to body
-                try {
-                    req.statusCode = 201; //Accepted
-                    let parsedBody = JSON.parse(body); //parse the transfer stringified json
-                    resolve(parsedBody.data);
-                } catch (err) {
-                    req.statusCode = 500; //Internal server error
-                    reject();
-                }
+                req.statusCode = 201; //Accepted
+                res.write(body);
+                let parsedBody = JSON.parse(body); //parse the transfer stringified json
+                resolve(parsedBody.data);
             });
         })
     }
 
-    const { q = undefined, v = undefined, id = undefined } = req.query; //queries from user
+    const { q = undefined } = req.query; //queries from user
 
     switch (req.method) {
         case 'GET': {
