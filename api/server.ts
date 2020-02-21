@@ -41,7 +41,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                         req.statusCode = 201; //Accepted
                         let formattedPost = { //Generate the additional data relevant to post
                             id: token(8),
-                            content: () => { try { return JSON.parse(body) } catch(e) { return 'fail' } },
+                            content: body.toString(),
                             date: Date.now(),
                         };
                         actP.push(formattedPost);

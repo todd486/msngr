@@ -18,8 +18,7 @@ async function sendData(query, data) {
 	switch (query) {
 		case 'post': {
 			return new Promise((resolve, reject) => {
-				console.log(data);
-				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}`, JSON.stringify({ data }))
+				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}`, { data })
 					.then(response => {
 						resolve(response);
 					})
