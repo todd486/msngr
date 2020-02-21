@@ -31,7 +31,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         case 'POST': {
             switch (q) {
                 case 'post': {
-                    let body: string;
+                    let body = '';
                     req.on('data', (chunk) => {
                         if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
                             console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
@@ -39,9 +39,10 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                             req.connection.destroy();
                         } else { body += chunk; } //else add the chunk to body
                         req.statusCode = 201; //Accepted
+                        let parsedData = JSON.parse(body);
                         let formattedPost = { //Generate the additional data relevant to post
                             id: token(8),
-                            content: body,
+                            content: parsedData.data,
                             date: Date.now(),
                         };
                         actP.push(formattedPost);

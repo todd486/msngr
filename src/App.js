@@ -14,21 +14,16 @@ async function fetchData() {
 			})
 	})
 }
-async function sendData(query, data) {
-	switch (query) {
-		case 'post': {
-			return new Promise((resolve, reject) => {
-				axios.post(`https://msngr.now.sh/api/server.ts?q=${query}`, { data })
-					.then(response => {
-						resolve(response);
-					})
-					.catch(error => {
-						reject(error);
-					})
+async function sendData(data) {
+	return new Promise((resolve, reject) => {
+		axios.post(`https://msngr.now.sh/api/server.ts?q=post`, { data })
+			.then(response => {
+				resolve(response);
 			})
-		}
-		default: { console.log('malformed internal post request') }
-	}
+			.catch(error => {
+				reject(error);
+			})
+		})
 }
 
 function App() {
@@ -43,7 +38,7 @@ class AppContainer extends React.Component {
 	constructor(props) {
 		super(props);
 		this.connError = this.connError.bind(this);
-		this.state = {
+		this.state = { 
 			loading: true,
 			loadingError: true,
 			connAttempt: 0,
@@ -53,7 +48,7 @@ class AppContainer extends React.Component {
 				profanity: true,
 				compact: false,
 				max_post: 128,
-			}
+			} //TODO: make settings take effect
 		}
 	}
 
@@ -110,12 +105,12 @@ class AppContainer extends React.Component {
 						<article className='submenu'>
 							{/* About section */}
 							<h1>About msngr</h1>
-							<p>msngr, <i>(pronounced 'Messenger')</i> is an anonymous, open-source public messaging service, which is free for anyone to use and communicate freely upon.</p>
+							<p>msngr, <i>(pronounced 'Messenger')</i> is an anonymous, open-source public messaging service; where messages have a lifespan of only 10 seconds! It's free for anyone to use and communicate freely upon.</p>
 							<p>Created as a school project for my web development course in the span of a little more than a month, it is not intended to be a serious method of communication, rather a silly experiment to see what happens when you give people a voice free from the bounds of reality, and letting the masses decide what should stay on the front page for the day.</p>
 							<p>I hope that people can enjoy my little creation and share their thoughts on it.</p>
 							<h2>Privacy Policy and GDPR info</h2>
 							<p>In order to comply with the General Data Protection Regulations put in place by the European Union, none of the posts made to msngr contain any personally identifying information, aside from the IP address used to connect to our servers, which is kept securely inaccessible from the public.</p>
-							<p>Though data which is sent on msngr is <b>unencrypted</b>, so I strongly advice against sending any form of sensitive information on msngr.</p>
+							<p>Though data which is sent on msngr is encrypted with SSL provided by Zeit, so I strongly advice against sending any form of sensitive information on msngr.</p>
 
 							<footer>&copy; Isabelle Svahn, 2020</footer>
 						</article> : <article className='submenu'>
@@ -204,8 +199,6 @@ class MessageManager extends React.Component {
 				this.setState({
 					posts: sortedPosts(this.state.posts)
 				})
-
-
 			})
 			.catch((err) => { console.log(err); this.props.connError(); })
 	}
@@ -246,7 +239,7 @@ class MessageManager extends React.Component {
 
 				<div className='message-container' aria-live='polite'> {this.state.posts.map((data, index) => (
 					<div className={this.state.settings.compact ? 'message compact' : 'message'} key={index} value={data.postID}>
-						<div className='content' value={this.state.debug ? data.id : null}>
+						<div className='content'>
 							{data.pinned ? <i title="This post has been pinned to the top. It's probably important." className='pinned fa fa-thumb-tack' /> : false}
 							{data.content}
 
@@ -306,7 +299,7 @@ class UserText extends React.Component {
 
 		//check if total length excluding whitespace is more than 2 char
 		if (content.trim().length >= 2) {
-			await sendData('post', content)
+			await sendData(content)
 				.then(() => {
 					this.setState({ content: '' });
 					this.props.callback(0);
