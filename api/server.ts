@@ -26,6 +26,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                 case 'posts': { res.write(JSON.stringify(actP)); res.end(); }
                 default: { res.statusCode = 404; res.end(); } /* Not Found */
             }
+            break;
         }
         case 'POST': {
             function handleData() {
@@ -69,6 +70,7 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
                 default: { res.statusCode = 401; res.end(); 
                 } //Bad Request
             }
+            break;
         }
         default: { res.statusCode = 405; res.end(); } //Method Not Supported
     }
