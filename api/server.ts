@@ -18,24 +18,6 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         return output;
     }
 
-    function handleData() {
-        return new Promise((resolve, reject) => {
-            let body: string; //create temporary value to store body
-            req.on('data', (chunk) => {
-                if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
-                    console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
-                    req.statusCode = 413; //Request too large
-                    req.connection.destroy();
-                    reject();
-                } else { body += chunk; } //else add the chunk to body
-                req.statusCode = 201; //Accepted
-                res.write(body);
-                let parsedBody = JSON.parse(body); //parse the transfer stringified json
-                resolve(parsedBody.data);
-            });
-        })
-    }
-
     const { q = undefined } = req.query; //queries from user
 
     switch (req.method) {
@@ -49,18 +31,21 @@ export default (req: now.NowRequest, res: now.NowResponse) => {
         case 'POST': {
             switch (q) {
                 case 'post': {
-                    handleData()
-                        .then(resolve => {
-                            let formattedPost = { //Generate the additional data relevant to post
-                                id: token(8),
-                                content: resolve,
-                                date: Date.now(),
-                            };
-                            actP.push(formattedPost);
-                        })
-                        .catch((reject) => {
-                            res.end(reject);
-                        })
+                    let body: string;
+                    req.on('data', (chunk) => {
+                        if (chunk.length > 1e6) { //kill the connection if chunk larger than 1e6 bytes (1000000 bytes ~~~ 1MB)
+                            console.log(`[WARN] User sent chunk larger than 1MB, destroying connection!`)
+                            req.statusCode = 413; //Request too large
+                            req.connection.destroy();
+                        } else { body += chunk; } //else add the chunk to body
+                        req.statusCode = 201; //Accepted
+                        let formattedPost = { //Generate the additional data relevant to post
+                            id: token(8),
+                            content: () => { try { return JSON.parse(body) } catch(e) { return 'fail' } },
+                            date: Date.now(),
+                        };
+                        actP.push(formattedPost);
+                    });
                     break;
                 }
                 default: { res.statusCode = 401; } //Bad Request
